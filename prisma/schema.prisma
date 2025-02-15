@@ -1,0 +1,244 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+enum Status {
+  BLOCK
+  ACTIVE
+  PENDING
+}
+
+enum Role {
+  CTV
+  ADMIN
+}
+
+enum SHIPMETHOD {
+  VIETTELPOST
+  OFFLINE
+  GRAB
+}
+
+enum StatusNotification {
+  SEEN
+  UNREAD
+}
+
+enum StatusAddress {
+  BLOCK
+  ACTIVE
+}
+//USER 
+
+
+model USER {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  phone String @unique
+  password String
+  name String? 
+  image String? 
+  email String? @unique
+  sex Boolean? 
+  birthDay DateTime?
+  defaultAddressId String? @default("")
+  createDate DateTime @default(now())
+  updateDate DateTime @default(now())
+  code Int?
+  codeExpiry DateTime?
+  refreshToken String?
+  status Status @default(PENDING)
+  role Role @default(CTV)
+  addressIdList String[] @default([])
+  orderIdList String[] @default([])
+  active Boolean @default(true)
+  notificationIdList String[] @default([])
+  orderDetailReportIdList String [] @default([])
+
+  @@map("user")
+
+}
+
+model Address {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  phone String
+  city Json
+  district Json
+  ward Json
+  apartment String
+  userId String
+  status StatusAddress @default(ACTIVE)
+
+  @@map("address")
+
+}
+
+model Notification {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  describe String?
+  image String?
+  status StatusNotification @default(UNREAD)
+  createDate DateTime @default(now())
+  updateDate DateTime @default(now())
+  link String?
+  userId String
+  @@map("notification")
+}
+
+
+//CATEGORY: Adidas, Mlb, Jibbitz, Crocs, Sản phẩm khác
+
+model Category {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  image String
+  typeIdList String[] @default([])
+  colorIdList String[] @default([])
+  styleIdList String[] @default([])
+  productIdList String[] @default([])
+  active Boolean @default(true)
+  @@map("category")
+}
+
+model Color {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  active Boolean @default(true)
+  categoryId String
+
+  @@map("material")
+}
+
+model Styles {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  categoryId String
+  active Boolean @default(true)
+
+  @@map("styles")
+}
+
+model Type{
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+  categoryId String
+
+  @@map("type")
+}
+
+
+//PRODUCT
+
+model Product {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  describe String?
+
+  active Boolean @default(true)
+  
+  materialId String?
+  originId String?
+  styleId String?
+  brandId String?
+
+  createDate DateTime? @default(now())
+  updateDate DateTime? @default(now())
+
+  importPrice Float?
+  ctvPrice Float?
+  sellPrice Float?
+  virtualPrice Float?
+  image String?
+
+  productCIdList String[] @default([])
+
+  //{"color":"[red,green,blue]","size":"[M,L,XL]"}
+  //options Json?
+
+  categoryId String?
+
+  @@map("product")
+
+}
+
+
+model ProductDetail {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  importPrice Float?
+  ctvPrice Float?
+  sellPrice Float?
+  virtualPrice Float?
+  name String?
+  active Boolean @default(true)
+  images String[] @default([])
+  quantity Int?
+  numberSold Int? @default(0)
+
+  productId String?
+  discountId String?
+  orderDetailIdList String[] @default([])
+
+  size String
+
+  //[red,M] 
+  //option1 String?
+  //option2 String?
+
+  @@map("productDetail")
+}
+
+//ORDER
+
+model Orders {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderCode String?
+  createDate DateTime @default(now())
+  updateDate DateTime @default(now())
+  customerName String?
+  customerPhone String?
+  address Json
+  paid Boolean
+  orderDetailIdList String[] @default([])
+  deliveryCode String?
+  commission Float?
+  shipMethod SHIPMETHOD @default(VIETTELPOST)
+  shipFee Float?
+  userId String
+  status String
+  isOnline Boolean @default(true)
+  @@map("orders")
+}
+
+model OrderDetail {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+  price Float
+  orderId String
+  productDetailId String
+  @@map("orderDetail")
+}
+
+//BANNER
+
+model Banner {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  image String?
+  link String?
+  shopId String?
+  level String?
+  expired DateTime?
+  createDate DateTime? @default(now())
+  active Boolean @default(true)
+  @@map("banner")
+}
+
+//SHIP: Grab, Offline, Viettelpost
