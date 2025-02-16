@@ -1,23 +1,15 @@
 import ProductRepository from '../../repositories/ProductRepository.js';
-import ShopRepository from '../../repositories/ShopRepository.js';
 import UserRepository from '../../repositories/UserRepository.js';
 import AddressRepository from '../../repositories/AddressRepository.js';
 import OrderDetailRepository from '../../repositories/OrderDetailRepository.js';
-import OrdersRepository from '../../repositories/OrdersRepository.js';
+import OrderRepository from '../../repositories/OrderRepository.js';
 import fs from 'fs';
 import md5 from 'md5';
 import NotificationRepository from '../../repositories/NotificationRepository.js';
 import { socketIo } from '../../index.js';
 import { ReqMessageNew, ReqNotification } from '../../controllers/socket/EmitSocket.js';
-import ReviewRepository from '../../repositories/ReviewRepository.js';
 import path from 'path';
-import MessageRepository from '../../repositories/MessageRepository.js';
-import MessageDetailRepository from '../../repositories/MessageDetailRepository.js';
-import WalletRepository from '../../repositories/WalletRepository.js';
-import TransactionRepository from '../../repositories/TransactionRepository.js';
-import RequestWithdrawRepository from '../../repositories/RequestWithdrawRepository.js';
 import ProductDetailRepository from '../../repositories/ProductDetailRepository.js';
-import VoucherRepository from '../../repositories/VoucherRepository.js';
 
 class UserService {
     /////////////////////////
@@ -260,7 +252,7 @@ class UserService {
                 order.priceVoucher = parseFloat(req.body.order.priceVoucher);
                 order.priceMember = parseFloat(req.body.order.priceMember);
                 order.status = 'PROCESSING';
-                const orderRes = await OrdersRepository.db.create({ data: order });
+                const orderRes = await OrderRepository.db.create({ data: order });
                 if (orderRes && userShop) {
                     //
                     const notification = await NotificationRepository.db.create({
@@ -295,7 +287,7 @@ class UserService {
                                 return 'Fail';
                             }
                             if (productDetail.quantity < orderDetail.quantity) {
-                                await OrdersRepository.delete(orderRes.id);
+                                await OrderRepository.delete(orderRes.id);
                                 return 'Fail';
                             }
                             await ProductDetailRepository.update(productDetail.id, {
@@ -308,7 +300,7 @@ class UserService {
                         }),
                     );
                     const filteredOrderDetailId = listOrderDetailId.filter((id) => id !== null);
-                    const orderRes_2 = await OrdersRepository.update(orderRes.id, {
+                    const orderRes_2 = await OrderRepository.update(orderRes.id, {
                         orderDetailIdList: filteredOrderDetailId,
                     });
                     if (orderRes_2) {
@@ -346,7 +338,7 @@ class UserService {
 
     async cancleOrder(orderId, req) {
         try {
-            const order = await OrdersRepository.find(orderId);
+            const order = await OrderRepository.find(orderId);
             if (order.coolDown) {
                 const currentDate = new Date();
                 if (currentDate - order.updateDate < order.coolDown) {
@@ -360,7 +352,7 @@ class UserService {
                 await UserRepository.update(req.user.id, { voucherUsedIdList: new_voucherUsedIdList });
             }
             if ((order.status == 'PROCESSING' || order.status == 'CONFIRMED') && order.userId == req.user.id) {
-                const order_new = await OrdersRepository.update(orderId, {
+                const order_new = await OrderRepository.update(orderId, {
                     status: 'CANCEL',
                     updateDate: new Date(),
                     coolDown: 24 * 60 * 60 * 1000,
@@ -406,7 +398,7 @@ class UserService {
     }
     async reOrder(orderId, req) {
         try {
-            const order = await OrdersRepository.find(orderId);
+            const order = await OrderRepository.find(orderId);
             if (order.coolDown) {
                 const currentDate = new Date();
                 if (currentDate - order.updateDate < order.coolDown) {
@@ -472,7 +464,7 @@ class UserService {
             );
 
             if (order.status == 'CANCEL' && order.userId == req.user.id) {
-                const order_new = await OrdersRepository.update(orderId, {
+                const order_new = await OrderRepository.update(orderId, {
                     status: 'PROCESSING',
                     updateDate: new Date(),
                     coolDown: 24 * 60 * 60 * 1000,

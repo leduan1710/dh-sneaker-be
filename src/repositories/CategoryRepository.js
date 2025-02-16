@@ -1,4 +1,4 @@
-import BaseRepository from './BaseRepository.js';
+import BaseRepository from "./BaseRepository.js";
 
 class CategoryRepository extends BaseRepository {
     modelName = 'Category';
@@ -9,6 +9,7 @@ class CategoryRepository extends BaseRepository {
     }
 
     async findManyCategory(categoryIdClIST) {
+        
         return this.db.findMany({ where: { id: { in: categoryIdClIST } } });
     }
 }

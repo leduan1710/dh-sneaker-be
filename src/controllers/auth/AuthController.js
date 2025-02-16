@@ -35,7 +35,8 @@ class AuthController {
             const user = await UserRepository.findByEmail(req.body.email);
             if (user) {
                 if (user.codeExpiry < new Date().getTime()) {
-                    return res.status(httpStatus.OK).json({ message: 'Code expery' });
+                    return res.status(httpStatus.OK).json({ message: 'Code expired' });
+                
                 }
                 if (String(user.code) == req.body.code) {
                     await UserRepository.update(user.id, { codeExpiry: null, code: null, status: 'ACTIVE' });
@@ -239,6 +240,10 @@ class AuthController {
             if (dataRes == 'Account is inActive') {
                 return res.status(httpStatus.OK).json({ message: 'Account is inActive' });
             }
+            if (dataRes == 'Phone or password is incorrect') {
+                return res.status(httpStatus.OK).json({ message: 'Phone or password is incorrect' });
+            }
+            console.log(dataRes)
             if (dataRes) {
                 return res.status(httpStatus.OK).json({
                     message: 'Login success',

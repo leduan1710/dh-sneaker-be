@@ -109,7 +109,6 @@ export default class BaseRepository {
 
     findAll(options = {}) {
         const { select, where, orderBy } = options;
-
         return this.db.findMany({
             select: select || this.getSelectFields(),
             where: where || {},

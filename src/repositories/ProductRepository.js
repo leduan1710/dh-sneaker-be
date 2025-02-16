@@ -1,6 +1,5 @@
 import BaseRepository from './BaseRepository.js';
 import CategoryRepository from './CategoryRepository.js';
-import DiscountRepository from './DiscountRepository.js';
 
 class ProductRepository extends BaseRepository {
     modelName = 'Product';

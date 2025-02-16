@@ -119,5 +119,5 @@ cron.schedule('0 0 * * *', () => {
 //--------------------------------------------------------------------
 initApplication(app);
 app.listen(port, () => {
-    console.log(`KLTN-API listening on port ${port}`);
+    console.log(`DHSneaker-API listening on port ${port}`);
 });

@@ -1,15 +1,10 @@
 import BannerRepository from '../../../repositories/BannerRepository.js';
 import CategoryRepository from '../../../repositories/CategoryRepository.js';
-import DiscountRepository from '../../../repositories/DiscountRepository.js';
 import OrderDetailRepository from '../../../repositories/OrderDetailRepository.js';
-import OrdersRepository from '../../../repositories/OrdersRepository.js';
+import OrderRepository from '../../../repositories/OrderRepository.js';
 import ProductDetailRepository from '../../../repositories/ProductDetailRepository.js';
 import ProductRepository from '../../../repositories/ProductRepository.js';
-import ReportOrderDetailRepository from '../../../repositories/ReportOrderDetailRepository.js';
-import ReportProductRepository from '../../../repositories/ReportProductRepository.js';
-import ShopRepository from '../../../repositories/ShopRepository.js';
 import UserRepository from '../../../repositories/UserRepository.js';
-import VoucherRepository from '../../../repositories/VoucherRepository.js';
 
 class GetDataService {
     async getDataOrderEmail(order) {
@@ -79,7 +74,7 @@ class GetDataService {
             }
             const dataShop = shop[0];
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     shopId: dataShop.id,
                 },
@@ -110,7 +105,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     paid: true,
                     createDate: {
@@ -162,7 +157,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     paid: true,
                     createDate: {
@@ -324,7 +319,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     status: 'DELIVERING',
                     shopId: shop[0].id,
@@ -362,7 +357,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     paid: true,
                     createDate: {
@@ -399,7 +394,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const totalOrders = await OrdersRepository.db.count({
+            const totalOrders = await OrderRepository.db.count({
                 where: {
                     paid: true,
                     createDate: {
@@ -422,7 +417,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const totalOrders = await OrdersRepository.db.count({
+            const totalOrders = await OrderRepository.db.count({
                 where: {
                     status: {
                         in: ['PROCESSED', 'DELIVERING'],
@@ -448,7 +443,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orderDelivering = await OrdersRepository.db.count({
+            const orderDelivering = await OrderRepository.db.count({
                 where: {
                     status: 'DELIVERING',
                     shopId: shop[0].id,
@@ -472,7 +467,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     paid: true,
                     shopId: shop[0].id,
@@ -508,7 +503,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     paid: true,
                     shopId: shop[0].id,
@@ -548,7 +543,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     status: 'PROCESSED',
                     paid: true,
@@ -609,7 +604,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     status: 'PROCESSED',
                     paid: true,
@@ -661,7 +656,7 @@ class GetDataService {
             const startOfMonth = new Date(year, month - 1, 1);
             const endOfMonth = new Date(year, month, 0);
 
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     status: 'PROCESSED',
                     paid: true,
@@ -705,7 +700,7 @@ class GetDataService {
             const endOfMonth = new Date(year, month, 0);
 
             // Lấy danh sách đơn hàng đã thanh toán trong tháng
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     status: 'PROCESSED',
                     paid: true,
@@ -779,9 +774,10 @@ class GetDataService {
     }
     async getAllCategories() {
         try {
-            const categories = await CategoryRepository.db.findMany({ where: { active: true } });
+            const categories = await CategoryRepository.findAll();
             return categories;
         } catch (e) {
+            console.log(e.message)
             return 'Fail';
         }
     }
@@ -856,7 +852,7 @@ class GetDataService {
     }
     async getAllOrderByShop(shopId) {
         try {
-            const orders = await OrdersRepository.findOrderByShop(shopId);
+            const orders = await OrderRepository.findOrderByShop(shopId);
             return orders;
         } catch (e) {
             return 'Fail';
@@ -914,7 +910,7 @@ class GetDataService {
                 },
             });
             const orderIds = orderDetails.map((detail) => detail.orderId);
-            const orders = await OrdersRepository.db.findMany({
+            const orders = await OrderRepository.db.findMany({
                 where: {
                     id: { in: orderIds },
                 },
@@ -948,7 +944,7 @@ class GetDataService {
             let result = [];
             const orderDetail = await OrderDetailRepository.find(reportOrder.orderDetailId);
             if (!orderDetail) return 'Fail';
-            const order = await OrdersRepository.find(orderDetail.orderId);
+            const order = await OrderRepository.find(orderDetail.orderId);
             const shop = await ShopRepository.find(order.shopId);
             result.push({
                 report,
@@ -977,7 +973,7 @@ class GetDataService {
             for (const report of reportOrders) {
                 const orderDetail = await OrderDetailRepository.find(report.orderDetailId);
                 if (!orderDetail) return 'Fail';
-                const order = await OrdersRepository.find(orderDetail.orderId);
+                const order = await OrderRepository.find(orderDetail.orderId);
                 const shop = await ShopRepository.find(order.shopId);
 
                 result.push({

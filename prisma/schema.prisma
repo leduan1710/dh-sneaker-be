@@ -100,7 +100,7 @@ model Notification {
 model Category {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   name String
-  image String
+  image String?
   typeIdList String[] @default([])
   colorIdList String[] @default([])
   styleIdList String[] @default([])
@@ -145,10 +145,8 @@ model Product {
 
   active Boolean @default(true)
   
-  materialId String?
-  originId String?
-  styleId String?
-  brandId String?
+  styleIds String[] @default([])
+  colorId String?
 
   createDate DateTime? @default(now())
   updateDate DateTime? @default(now())
@@ -160,9 +158,6 @@ model Product {
   image String?
 
   productCIdList String[] @default([])
-
-  //{"color":"[red,green,blue]","size":"[M,L,XL]"}
-  //options Json?
 
   categoryId String?
 
@@ -188,10 +183,6 @@ model ProductDetail {
   orderDetailIdList String[] @default([])
 
   size String
-
-  //[red,M] 
-  //option1 String?
-  //option2 String?
 
   @@map("productDetail")
 }

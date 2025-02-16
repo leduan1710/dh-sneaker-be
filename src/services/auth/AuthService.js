@@ -70,7 +70,7 @@ class AuthService {
             }
             return 'Phone or password is incorrect';
         } catch (e) {
-            console.log(e.message);
+            console.log(e.message, "login fail");
             return 'Fail';
         }
     }

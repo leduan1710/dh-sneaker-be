@@ -1,18 +1,11 @@
 import { ReqNotification } from '../../../controllers/socket/EmitSocket.js';
 import CategoryRepository from '../../../repositories/CategoryRepository.js';
-import DiscountRepository from '../../../repositories/DiscountRepository.js';
 import NotificationRepository from '../../../repositories/NotificationRepository.js';
 import OrderDetailRepository from '../../../repositories/OrderDetailRepository.js';
-import OrdersRepository from '../../../repositories/OrdersRepository.js';
+import OrderRepository from '../../../repositories/OrderRepository.js';
 import ProductDetailRepository from '../../../repositories/ProductDetailRepository.js';
 import ProductRepository from '../../../repositories/ProductRepository.js';
-import ReportOrderDetailRepository from '../../../repositories/ReportOrderDetailRepository.js';
-import ReportProductRepository from '../../../repositories/ReportProductRepository.js';
-import ShopRepository from '../../../repositories/ShopRepository.js';
-import TransactionRepository from '../../../repositories/TransactionRepository.js';
 import UserRepository from '../../../repositories/UserRepository.js';
-import VoucherRepository from '../../../repositories/VoucherRepository.js';
-import WalletRepository from '../../../repositories/WalletRepository.js';
 
 class UpdateDataService {
     async saveProduct(req) {
@@ -69,12 +62,12 @@ class UpdateDataService {
     }
     async confirmedOrder(orderId) {
         try {
-            const order = await OrdersRepository.find(orderId);
+            const order = await OrderRepository.find(orderId);
             const user = await UserRepository.find(order.userId);
 
             if (order.status === 'PROCESSING') {
                 // Cập nhật trạng thái đơn hàng
-                const updatedOrder = await OrdersRepository.update(orderId, {
+                const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'CONFIRMED',
                     updateDate: new Date(),
                 });
@@ -116,13 +109,13 @@ class UpdateDataService {
     }
     async deliverOrder(orderId) {
         try {
-            const order = await OrdersRepository.find(orderId);
+            const order = await OrderRepository.find(orderId);
             const user = await UserRepository.find(order.userId);
 
             // Kiểm tra xem đơn hàng có đang trong trạng thái PROCESSING không
             if (order.status === 'CONFIRMED') {
                 // Cập nhật trạng thái đơn hàng
-                const updatedOrder = await OrdersRepository.update(orderId, {
+                const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'DELIVERING',
                     updateDate: new Date(),
                 });
@@ -164,7 +157,7 @@ class UpdateDataService {
     }
     async completedOrder(orderId) {
         try {
-            const order = await OrdersRepository.find(orderId);
+            const order = await OrderRepository.find(orderId);
             const user = await UserRepository.find(order.userId);
             const shop = await ShopRepository.find(order.shopId);
             const orderDetails = await OrderDetailRepository.db.findMany({
@@ -229,7 +222,7 @@ class UpdateDataService {
                     });
                 }
 
-                const updatedOrder = await OrdersRepository.update(orderId, {
+                const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'PROCESSED',
                     updateDate: new Date(),
                     paid: true,
@@ -275,7 +268,7 @@ class UpdateDataService {
                 UserRepository.find(reportOrder.userId),
                 OrderDetailRepository.find(reportOrder.orderDetailId),
             ]);
-            const order = await OrdersRepository.find(orderDetailofReport.orderId);
+            const order = await OrderRepository.find(orderDetailofReport.orderId);
             const shop = await ShopRepository.find(order.shopId);
             const orderDetails = await OrderDetailRepository.db.findMany({
                 where: {
@@ -374,7 +367,7 @@ class UpdateDataService {
                                     from: walletShop[0].id,
                                 },
                             }),
-                            OrdersRepository.delete(order.id),
+                            OrderRepository.delete(order.id),
                             OrderDetailRepository.delete(orderDetailofReport.id),
                         ]);
                         notification = await NotificationRepository.db.create({
@@ -390,7 +383,7 @@ class UpdateDataService {
                             const voucher = await VoucherRepository.find(order.voucherId);
                             if (voucher.condition > pureTotalAmount - refundAmount) {
                                 voucherReduce = voucher.reduce;
-                                await OrdersRepository.update(order.id, {
+                                await OrderRepository.update(order.id, {
                                     updateDate: new Date(),
                                     priceVoucher: 0,
                                     voucherId: null,
@@ -404,7 +397,7 @@ class UpdateDataService {
                                 ]);
                             }
                         }
-                        await OrdersRepository.update(order.id, {
+                        await OrderRepository.update(order.id, {
                             updateDate: new Date(),
                             priceMember: order.priceMember - refundPriceMember,
                         });
@@ -459,7 +452,7 @@ class UpdateDataService {
                             },
                         });
                         const orderDetailIdList = order.orderDetailIdList.filter((id) => id !== orderDetailofReport.id);
-                        await OrdersRepository.update(order.id, {
+                        await OrderRepository.update(order.id, {
                             updateDate: new Date(),
                             orderDetailIdList: orderDetailIdList,
                         });
@@ -517,7 +510,7 @@ class UpdateDataService {
                                 from: walletShop[0].id,
                             },
                         }),
-                        OrdersRepository.delete(order.id),
+                        OrderRepository.delete(order.id),
                         OrderDetailRepository.delete(orderDetailofReport.id),
                     ]);
                 } else {
@@ -525,7 +518,7 @@ class UpdateDataService {
                         const voucher = await VoucherRepository.find(order.voucherId);
                         if (voucher.condition > pureTotalAmount - refundAmount) {
                             voucherReduce = voucher.reduce;
-                            await OrdersRepository.update(order.id, {
+                            await OrderRepository.update(order.id, {
                                 updateDate: new Date(),
                                 priceVoucher: 0,
                                 voucherId: null,
@@ -539,7 +532,7 @@ class UpdateDataService {
                             ]);
                         }
                     }
-                    await OrdersRepository.update(order.id, {
+                    await OrderRepository.update(order.id, {
                         updateDate: new Date(),
                         priceMember: order.priceMember - refundPriceMember,
                     });
@@ -582,7 +575,7 @@ class UpdateDataService {
                         }),
                     ]);
                     const orderDetailIdList = order.orderDetailIdList.filter((id) => id !== orderDetailofReport.id);
-                    await OrdersRepository.update(order.id, {
+                    await OrderRepository.update(order.id, {
                         updateDate: new Date(),
                         orderDetailIdList: orderDetailIdList,
                     });
@@ -623,7 +616,7 @@ class UpdateDataService {
                 UserRepository.find(reportOrder.userId),
                 OrderDetailRepository.find(reportOrder.orderDetailId),
             ]);
-            const order = await OrdersRepository.find(orderDetailofReport.orderId);
+            const order = await OrderRepository.find(orderDetailofReport.orderId);
             const shop = await ShopRepository.find(order.shopId);
             const orderDetails = await OrderDetailRepository.db.findMany({
                 where: {
@@ -701,7 +694,7 @@ class UpdateDataService {
                                     },
                                 },
                             }),
-                            OrdersRepository.delete(order.id),
+                            OrderRepository.delete(order.id),
                             OrderDetailRepository.delete(orderDetailofReport.id),
                         ]);
                         notification = await NotificationRepository.db.create({
@@ -717,7 +710,7 @@ class UpdateDataService {
                             const voucher = await VoucherRepository.find(order.voucherId);
                             if (voucher.condition > pureTotalAmount - refundAmount) {
                                 voucherReduce = voucher.reduce;
-                                await OrdersRepository.update(order.id, {
+                                await OrderRepository.update(order.id, {
                                     updateDate: new Date(),
                                     priceVoucher: 0,
                                     voucherId: null,
@@ -731,7 +724,7 @@ class UpdateDataService {
                                 ]);
                             }
                         }
-                        await OrdersRepository.update(order.id, {
+                        await OrderRepository.update(order.id, {
                             updateDate: new Date(),
                             priceMember: order.priceMember - refundPriceMember,
                         });
@@ -772,7 +765,7 @@ class UpdateDataService {
                             },
                         });
                         const orderDetailIdList = order.orderDetailIdList.filter((id) => id !== orderDetailofReport.id);
-                        await OrdersRepository.update(order.id, {
+                        await OrderRepository.update(order.id, {
                             updateDate: new Date(),
                             orderDetailIdList: orderDetailIdList,
                         });
@@ -819,7 +812,7 @@ class UpdateDataService {
                             },
                         }),
 
-                        OrdersRepository.delete(order.id),
+                        OrderRepository.delete(order.id),
                         OrderDetailRepository.delete(orderDetailofReport.id),
                     ]);
                 } else {
@@ -827,7 +820,7 @@ class UpdateDataService {
                         const voucher = await VoucherRepository.find(order.voucherId);
                         if (voucher.condition > pureTotalAmount - refundAmount) {
                             voucherReduce = voucher.reduce;
-                            await OrdersRepository.update(order.id, {
+                            await OrderRepository.update(order.id, {
                                 updateDate: new Date(),
                                 priceVoucher: 0,
                                 voucherId: null,
@@ -841,7 +834,7 @@ class UpdateDataService {
                             ]);
                         }
                     }
-                    await OrdersRepository.update(order.id, {
+                    await OrderRepository.update(order.id, {
                         updateDate: new Date(),
                         priceMember: order.priceMember - refundPriceMember,
                     });
@@ -872,7 +865,7 @@ class UpdateDataService {
                         }),
                     ]);
                     const orderDetailIdList = order.orderDetailIdList.filter((id) => id !== orderDetailofReport.id);
-                    await OrdersRepository.update(order.id, {
+                    await OrderRepository.update(order.id, {
                         updateDate: new Date(),
                         orderDetailIdList: orderDetailIdList,
                     });

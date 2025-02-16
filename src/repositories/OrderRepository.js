@@ -1,6 +1,6 @@
 import BaseRepository from './BaseRepository.js';
 
-class OrdersRepository extends BaseRepository {
+class OrderRepository extends BaseRepository {
     modelName = 'Orders';
 
     constructor() {
@@ -12,15 +12,13 @@ class OrdersRepository extends BaseRepository {
             address: true,
             paid: true,
             orderDetailIdList: true,
+            customerName: true,
+            customerPhone: true,
             priceShip: true,
-            shipId: true,
+            shipFee: true,
             userId: true,
-            shopId: true,
             status: true,
-            coolDown: true,
             updateDate: true,
-            priceVoucher: true,
-            priceMember: true,
         };
     }
 
@@ -73,4 +71,4 @@ class OrdersRepository extends BaseRepository {
     }
 }
 
-export default new OrdersRepository();
+export default new OrderRepository();
