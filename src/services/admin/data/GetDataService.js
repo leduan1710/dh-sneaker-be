@@ -785,8 +785,7 @@ class GetDataService {
         try {
             const products = await ProductRepository.db.findMany({
                 where: {
-                    activeByShop: true,
-                    // shopId: req.user.shopId,
+                    active: true,
                 },
             });
             return products;
@@ -802,14 +801,7 @@ class GetDataService {
             return 'Fail';
         }
     }
-    async getAllDiscountByShop(shopId) {
-        try {
-            const products = await DiscountRepository.findDiscountsByShop(shopId);
-            return products;
-        } catch (e) {
-            return 'Fail';
-        }
-    }
+
     async getAllProductDetailByProductId(productId) {
         try {
             const productDetail = await ProductDetailRepository.findAllProductDetailByProduct(productId);
@@ -863,180 +855,6 @@ class GetDataService {
             const orderDetails = await OrderDetailRepository.findOrderDetailByListId(orderDetailIdList);
             return orderDetails;
         } catch (e) {
-            return 'Fail';
-        }
-    }
-    async getVoucherByShop(userId) {
-        try {
-            const shop = await ShopRepository.findByUserId(userId);
-            const vouchers = await VoucherRepository.db.findMany({
-                where: {
-                    shopId: shop[0].id,
-                },
-            });
-            return vouchers;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getBannerByShop(userId) {
-        try {
-            const shop = await ShopRepository.findByUserId(userId);
-            const banners = await BannerRepository.db.findMany({
-                where: {
-                    shopId: shop[0].id,
-                },
-            });
-            return banners;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getReportOrderByShop(userId) {
-        try {
-            const shop = await ShopRepository.findByUserId(userId);
-            const reportOrders = await ReportOrderDetailRepository.db.findMany({
-                where: {
-                    check: false,
-                    checkByAdmin: false,
-                },
-            });
-            const orderDetailIds = reportOrders.map((report) => report.orderDetailId);
-            const orderDetails = await OrderDetailRepository.db.findMany({
-                where: {
-                    id: { in: orderDetailIds },
-                },
-            });
-            const orderIds = orderDetails.map((detail) => detail.orderId);
-            const orders = await OrderRepository.db.findMany({
-                where: {
-                    id: { in: orderIds },
-                },
-            });
-            const relatedReportOrders = reportOrders.filter((reportOrder) => {
-                const orderDetail = orderDetails.find((detail) => detail.id === reportOrder.orderDetailId);
-                if (orderDetail) {
-                    const order = orders.find((order) => order.id === orderDetail.orderId);
-                    return order && order.shopId === shop[0].id;
-                }
-                return false;
-            });
-            const result = relatedReportOrders.map((reportOrder) => {
-                const orderDetail = orderDetails.find((detail) => detail.id === reportOrder.orderDetailId);
-                return {
-                    ...reportOrder,
-                    orderId: orderDetail ? orderDetail.orderId : null,
-                    productDetailId: orderDetail ? orderDetail.productDetailId : null,
-                };
-            });
-            
-            return result;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getReportOrderById(reportOrderId) {
-        try {
-            const reportOrder = await ReportOrderDetailRepository.find(reportOrderId);
-            let result = [];
-            const orderDetail = await OrderDetailRepository.find(reportOrder.orderDetailId);
-            if (!orderDetail) return 'Fail';
-            const order = await OrderRepository.find(orderDetail.orderId);
-            const shop = await ShopRepository.find(order.shopId);
-            result.push({
-                report,
-                shopId: shop.id,
-                shopName: shop.name,
-            });
-
-            return result;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getReportOrderByAdmin() {
-        try {
-            const reportOrders = await ReportOrderDetailRepository.db.findMany({
-                where: {
-                    check: false,
-                    checkByAdmin: true,
-                },
-            });
-            let result = [];
-            if (!reportOrders) {
-                return reportOrders;
-            }
-            for (const report of reportOrders) {
-                const orderDetail = await OrderDetailRepository.find(report.orderDetailId);
-                if (!orderDetail) return 'Fail';
-                const order = await OrderRepository.find(orderDetail.orderId);
-                const shop = await ShopRepository.find(order.shopId);
-
-                result.push({
-                    report,
-                    shopId: order.shopId,
-                    shopName: shop.name,
-                });
-            }
-            return result;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getReportProductByAdmin() {
-        try {
-            const reportProducts = await ReportProductRepository.db.findMany({
-                where: {
-                    checkByAdmin: false,
-                },
-            });
-            let result = [];
-            if (!reportProducts) {
-                return reportProducts;
-            }
-            for (const report of reportProducts) {
-                const product = await ProductRepository.find(report.productId);
-
-                result.push({
-                    report,
-                    productId: product.id,
-                    productName: product.name,
-                });
-            }
-            return result;
-        } catch (e) {
-            console.log(e.message);
-            return 'Fail';
-        }
-    }
-    async getReportProductByShop(shopId) {
-        try {
-            //const shop = await ShopRepository.findByUserId(userId);
-            const products = await ProductRepository.db.findMany({
-                where: { shopId: shopId },
-                select: { id: true, name: true, image: true },
-            });
-            const productIds = products.map((product) => product.id);
-
-            const reports = await ReportProductRepository.db.findMany({
-                where: { productId: { in: productIds }, check: false },
-            });
-            const productMap = new Map(products.map((product) => [product.id, product.name]));
-            const productImageMap = new Map(products.map((product) => [product.id, product.image]));
-
-            const reportsWithProductName = reports.map((report) => ({
-                ...report,
-                productName: productMap.get(report.productId),
-                productImage: productImageMap.get(report.productId),
-            }));
-            return reportsWithProductName;
-        } catch (e) {
-            console.log(e.message);
             return 'Fail';
         }
     }

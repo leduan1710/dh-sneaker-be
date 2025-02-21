@@ -40,7 +40,7 @@ enum StatusAddress {
 //USER 
 
 
-model USER {
+model User {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   phone String @unique
   password String
@@ -115,7 +115,7 @@ model Color {
   active Boolean @default(true)
   categoryId String
 
-  @@map("material")
+  @@map("color")
 }
 
 model Styles {
@@ -135,6 +135,13 @@ model Type{
   @@map("type")
 }
 
+model Size{
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+  categoryId String
+
+  @@map("size")
+}
 
 //PRODUCT
 
@@ -145,6 +152,7 @@ model Product {
 
   active Boolean @default(true)
   
+  typeId String?
   styleIds String[] @default([])
   colorId String?
 
@@ -156,10 +164,11 @@ model Product {
   sellPrice Float?
   virtualPrice Float?
   image String?
-
+  imageList String[] @default([])
   productCIdList String[] @default([])
 
   categoryId String?
+
 
   @@map("product")
 
@@ -168,21 +177,22 @@ model Product {
 
 model ProductDetail {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  image String?
+  imageList String[] @default([])
+
   importPrice Float?
   ctvPrice Float?
   sellPrice Float?
   virtualPrice Float?
   name String?
   active Boolean @default(true)
-  images String[] @default([])
   quantity Int?
   numberSold Int? @default(0)
 
   productId String?
-  discountId String?
   orderDetailIdList String[] @default([])
 
-  size String
+  sizeId String?
 
   @@map("productDetail")
 }

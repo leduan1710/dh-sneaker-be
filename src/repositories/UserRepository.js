@@ -1,4 +1,4 @@
-import BaseRepository from "./BaseRepository";
+import BaseRepository from "./BaseRepository.js";
 
 class UserRepository extends BaseRepository {
     modelName = 'User';
