@@ -103,7 +103,6 @@ class ProductDetailRepository extends BaseRepository {
                     in: req.body.listProductDetailId,
                 },
                 active: true,
-                activeByShop: true,
             },
         });
         const listProductId = productDetails.map((item) => item.productId);

@@ -25,5 +25,31 @@ class ProductDetailService {
             return 'Fail';
         }
     }
+    async findProductDetailMany(req) {
+        try {
+            const productDetails = await ProductDetailRepository.db.findMany({
+                where: {
+                    id: {
+                        in: req.body.listProductDetailId
+                    }
+                }
+            });
+            const sizeIds = productDetails.map((detail) => detail.sizeId);
+
+            const sizes = await Promise.all(sizeIds.map((sizeId) => SizeRepository.find(sizeId)));
+
+            const productDetailsWithSizeName = productDetails.map((detail, index) => ({
+                ...detail,
+                sizeName: sizes[index] ? sizes[index].name : null,
+            }));
+            if (productDetailsWithSizeName) {
+                return productDetailsWithSizeName;
+            } else {
+                return 'Fail';
+            }
+        } catch {
+            return 'Fail';
+        }
+    }
 }
 export default new ProductDetailService();

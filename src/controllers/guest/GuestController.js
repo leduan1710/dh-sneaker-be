@@ -12,6 +12,7 @@ class GuestController {
         app.get('/api/products', this.findAllProducts);
         app.get('/api/product/:productId', this.findProductById);
         app.get('/api/product-detail-by-product/:productId', this.findProductDetailByProductId);
+        app.post('/api/get-product-detail-many', this.findProductDetailMany);
     }
     async findAllCategories(req, res) {
         try {
@@ -70,9 +71,22 @@ class GuestController {
     async findProductDetailByProductId(req, res) {
         try {
             const productId = req.params.productId;
-            const productDetail = await ProductDetailService.getProductDetailByProductId(productId);
-            if (productDetail.length > 0) {
-                return res.status(httpStatus.OK).json({ productDetail, message: 'Success' });
+            const productDetails = await ProductDetailService.getProductDetailByProductId(productId);
+            if (productDetails.length > 0) {
+                return res.status(httpStatus.OK).json({ productDetails, message: 'Success' });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findProductDetailMany(req, res) {
+        try {
+            
+            const resProductDetail = await ProductDetailService.findProductDetailMany(req);
+            if (resProductDetail != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', productDetails: resProductDetail });
             } else {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
