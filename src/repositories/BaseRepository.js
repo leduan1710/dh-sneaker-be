@@ -128,7 +128,6 @@ export default class BaseRepository {
         const id = req.params?.id;
         const body = req.body || {};
         let data = {};
-        console.log(req)
         const fields = this.getFields();
         fields.forEach((field) => {
             let fieldName = field.name;

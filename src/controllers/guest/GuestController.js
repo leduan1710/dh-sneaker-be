@@ -4,6 +4,10 @@ import GetDataService from '../../services/admin/data/GetDataService.js';
 import ProductService from '../../services/ProductService.js';
 import ProductDetailService from '../../services/ProductDetailService.js';
 import CategoryService from '../../services/CategoryService.js';
+import SizeRepository from '../../repositories/SizeRepository.js';
+import StylesRepository from '../../repositories/StylesRepository.js';
+import ColorRepository from '../../repositories/ColorRepository.js';
+import TypeRepository from '../../repositories/TypeRepository.js';
 
 class GuestController {
     initRoutes(app) {
@@ -13,6 +17,14 @@ class GuestController {
         app.get('/api/product/:productId', this.findProductById);
         app.get('/api/product-detail-by-product/:productId', this.findProductDetailByProductId);
         app.post('/api/get-product-detail-many', this.findProductDetailMany);
+        app.get('/api/all-size', this.findAllSize);
+        app.get('/api/all-style', this.findAllStyle);
+        app.get('/api/all-color', this.findAllColor);
+        app.get('/api/all-type', this.findAllType);
+        app.get('/api/type-by-category/:categoryId', this.findTypesByCategory);
+        app.post('/api/get-product-by-category/:categoryId/:take/:step', this.findProductByCategory);
+        app.post('/api/get-product-by-categoryName/:categoryName/:take/:step', this.findProductByCategoryName);
+
     }
     async findAllCategories(req, res) {
         try {
@@ -83,7 +95,6 @@ class GuestController {
     }
     async findProductDetailMany(req, res) {
         try {
-            
             const resProductDetail = await ProductDetailService.findProductDetailMany(req);
             if (resProductDetail != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', productDetails: resProductDetail });
@@ -91,6 +102,84 @@ class GuestController {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
         } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findAllSize(req, res) {
+        try {
+            const sizes = await SizeRepository.findAll();
+            return res.status(httpStatus.OK).json({ message: 'Success', sizes });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findAllStyle(req, res) {
+        try {
+            const styles = await StylesRepository.findAll();
+            return res.status(httpStatus.OK).json({ message: 'Success', styles });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findAllColor(req, res) {
+        try {
+            const colors = await ColorRepository.findAll();
+            return res.status(httpStatus.OK).json({ message: 'Success', colors });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findAllType(req, res) {
+        try {
+            const types = await TypeRepository.findAll();
+            return res.status(httpStatus.OK).json({ message: 'Success', types });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findTypesByCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+
+            const types = await TypeRepository.db.findMany({
+                where: {
+                    categoryId: categoryId,
+                },
+            });
+            if (types) return res.status(httpStatus.OK).json({ message: 'Success', types });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findProductByCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+            const take = req.params.take;
+            const step = req.params.step;
+            const products = await ProductService.findProductByCategory(categoryId, take, step, req);
+            if (products != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findProductByCategoryName(req, res) {
+        try {
+            const categoryName = req.params.categoryName;
+            const take = req.params.take;
+            const step = req.params.step;
+            const products = await ProductService.findProductByCategoryName(categoryName, take, step, req);
+            if (products != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch(e) {
+            console.log(e.message)
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }

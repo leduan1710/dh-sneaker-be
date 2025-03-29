@@ -243,7 +243,6 @@ class AuthController {
             if (dataRes == 'Phone or password is incorrect') {
                 return res.status(httpStatus.OK).json({ message: 'Phone or password is incorrect' });
             }
-            console.log(dataRes)
             if (dataRes) {
                 return res.status(httpStatus.OK).json({
                     message: 'Login success',

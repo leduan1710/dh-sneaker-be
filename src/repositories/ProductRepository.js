@@ -422,45 +422,23 @@ class ProductRepository extends BaseRepository {
         return res;
     }
     async findProductByCategory(categoryId, take, step, req) {
-        // // get category child
-        const category = await CategoryRepository.find(categoryId);
-        //
-        let categoryIdClIST = category.categoryIdClIST;
-        if (categoryIdClIST.length == 0) {
-            categoryIdClIST = [category.id];
-        }
-        //
         //product
         const products = await this.db.findMany({
             where: {
-                categoryId: {
-                    in: categoryIdClIST,
-                },
+                categoryId: categoryId,
                 active: true,
-                activeByShop: true,
-
-                ...(req.body.options.materialId ? { materialId: req.body.options.materialId } : {}),
-                ...(req.body.options.brandId ? { brandId: req.body.options.brandId } : {}),
-                ...(req.body.options.styleId ? { styleId: req.body.options.styleId } : {}),
-                ...(req.body.options.originId ? { originId: req.body.options.originId } : {}),
+                ...(req.body.options.typeIds ? { brandId: { in: req.body.options.typeIds } } : {}), // Lọc nhiều loại
+                ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}), // Lọc nhiều kiểu
+                ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}), // Lọc nhiều màu
             },
 
             select: {
                 id: true,
                 name: true,
-                // materialId: true,
-                // originId: true,
-                // styleId: true,
-                // brandId: true,
-                // materialOrther: true,
-                // originOrther: true,
-                // styleOrther: true,
-                // brandOrther: true,
-                price: true,
+                sellPrice: true,
+                virtualPrice: true,
                 image: true,
-                percentDiscountTop: true,
-                userFavoriteIdList: true,
-                shopId: true,
+                colorId: true,
             },
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { take: parseInt(take) }),
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { skip: (step - 1) * take }),
@@ -473,8 +451,8 @@ class ProductRepository extends BaseRepository {
                 productId: {
                     in: productIds,
                 },
+                ...(req.body.options.sizeIds ? { sizeId: { in: req.body.options.sizeIds } } : {}),
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -485,8 +463,75 @@ class ProductRepository extends BaseRepository {
                 },
             },
         });
-
-        const res = await this.getSold(products, groupedProductDetails);
+        const filteredProducts = products.filter(product =>
+            groupedProductDetails.some(detail => detail.productId === product.id)
+        );
+        const res = await this.getSold(filteredProducts, groupedProductDetails);
+        return res;
+    }
+    async findProductByCategoryName(categoryName, take, step, req) {
+        const category = await this.dbCategory.findFirst({
+            where: {
+                name: categoryName,
+            },
+            select: {
+                id: true,
+            },
+        });
+    
+        if (!category) {
+            throw new Error('Category not found');
+        }
+    
+        const categoryId = category.id; 
+    
+        const products = await this.db.findMany({
+            where: {
+                categoryId: categoryId,
+                active: true,
+                ...(req.body.options.typeIds ? { brandId: { in: req.body.options.typeIds } } : {}),
+                ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
+                ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
+            },
+            select: {
+                id: true,
+                name: true,
+                sellPrice: true,
+                virtualPrice: true,
+                image: true,
+                colorId: true,
+            },
+            ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { take: parseInt(take) }),
+            ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { skip: (step - 1) * take }),
+        });
+    
+        const productIds = products.map((item) => item.id);
+    
+        // Số lượng đã bán
+        const groupedProductDetails = await this.dbProductDetail.groupBy({
+            by: ['productId'],
+            where: {
+                productId: {
+                    in: productIds,
+                },
+                ...(req.body.options.sizeIds ? { sizeId: { in: req.body.options.sizeIds } } : {}),
+                active: true,
+            },
+            _sum: {
+                numberSold: true,
+            },
+            orderBy: {
+                _sum: {
+                    numberSold: 'desc',
+                },
+            },
+        });
+    
+        const filteredProducts = products.filter(product =>
+            groupedProductDetails.some(detail => detail.productId === product.id)
+        );
+    
+        const res = await this.getSold(filteredProducts, groupedProductDetails);
         return res;
     }
 

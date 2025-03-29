@@ -3,6 +3,33 @@ import ProductRepository from '../repositories/ProductRepository.js';
 import SizeRepository from '../repositories/SizeRepository.js';
 
 class ProductDetailService {
+    async saveProductDetail(req) {
+        try {
+            const productDetail = await ProductDetailRepository.saveUpload(req);
+            
+            await ProductRepository.db.update({
+                where: {
+                    id: productDetail.productId,
+                },
+                data: {
+                    productCIdList: {
+                        push: productDetail.id,
+                    },
+                },
+            });
+    
+            return {
+                message: 'Success',
+                productDetail: productDetail,
+            };
+        } catch (e) {
+            console.error(e);
+            return {
+                message: 'Fail',
+                productDetail: null,
+            };
+        }
+    }
     async getProductDetailByProductId(productId) {
         try {
             const productDetails = await ProductDetailRepository.db.findMany({
