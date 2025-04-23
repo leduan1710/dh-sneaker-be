@@ -1,7 +1,7 @@
 import AuthController from '../controllers/auth/AuthController.js';
 import ProvinceController from '../controllers/ProvinceController.js';
 import UserController from '../controllers/user/UserController.js';
-import CRUDController from '../controllers/admin/data/CRUDController.js';
+import AdminController from '../controllers/admin/data/AdminController.js';
 import GuestController from '../controllers/guest/GuestController.js';
 export function initApplication(app) {
     BigInt.prototype.toJSON = function () {
@@ -12,7 +12,7 @@ export function initApplication(app) {
     //Scheduled.initJobs();
 }
 export function initRoutes(app) {
-    CRUDController.initRoutes(app);
+    AdminController.initRoutes(app);
     AuthController.initRoutes(app);
     UserController.initRoutes(app);
     ProvinceController.initRoutes(app);

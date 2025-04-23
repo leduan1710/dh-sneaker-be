@@ -1,3 +1,4 @@
+import { SHIPMETHOD } from '@prisma/client';
 import BaseRepository from './BaseRepository.js';
 
 class OrderRepository extends BaseRepository {
@@ -10,11 +11,17 @@ class OrderRepository extends BaseRepository {
         this.defaultSelect = {
             id: true,
             address: true,
+            addressDetail: true,
             paid: true,
             orderDetailIdList: true,
+            ctvName: true,
+            ctvNote: true,
+            shipMethod: true,
+            orderCode: true,
+            noteImage: true,
             customerName: true,
             customerPhone: true,
-            priceShip: true,
+            CODPrice: true,
             shipFee: true,
             userId: true,
             status: true,
@@ -42,6 +49,37 @@ class OrderRepository extends BaseRepository {
             where: {
                 shopId: shopId,
             },
+            orderBy: {
+                updateDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+    async findNewOrderByShopByStep(take, step) {
+        const orders = await this.db.findMany({
+            where: {
+                status: "PROCESSING"
+            },
+            take: parseInt(take),
+            skip: (step - 1) * take,
+            orderBy: {
+                updateDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+
+    async findAllOrderByShopByStep(take, step) {
+        const orders = await this.db.findMany({
+            where: {
+                status: {
+                    not: 'PROCESSING',
+                },
+            },
+            take: parseInt(take),
+            skip: (step - 1) * take,
             orderBy: {
                 updateDate: 'desc',
             },

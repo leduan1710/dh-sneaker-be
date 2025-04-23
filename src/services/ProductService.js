@@ -13,13 +13,13 @@ class ProductService {
                 }
                 if (req.body.options.sort == 'desc') {
                     const sortedProducts = products.sort((a, b) => {
-                        return b.price - a.price; // Sắp xếp giảm dần
+                        return b.sellPrice - a.sellPrice; // Sắp xếp giảm dần
                     });
                     return sortedProducts;
                 }
                 if (req.body.options.sort == 'asc') {
                     const sortedProducts = products.sort((a, b) => {
-                        return a.price - b.price; // Sắp xếp tăng dần
+                        return a.sellPrice - b.sellPrice; // Sắp xếp tăng dần
                     });
                     return sortedProducts;
                 }
@@ -39,35 +39,26 @@ class ProductService {
             return 'Fail';
         }
     }
+    async findNewProducts(take, step, req) {
+        try {
+            const products = await ProductRepository.findNewProducts(take, step, req);
+            if (products) {
+                return products;
+            } else {
+                return 'Fail';
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
     async findProductByCategoryName(categoryName, take, step, req) {
         try {
             const products = await ProductRepository.findProductByCategoryName(categoryName, take, step, req);
             if (products) {
-                if (req.body.options.sort == null) {
-                    return products;
-                }
-                if (req.body.options.sort == 'desc') {
-                    const sortedProducts = products.sort((a, b) => {
-                        return b.price - a.price; // Sắp xếp giảm dần
-                    });
-                    return sortedProducts;
-                }
-                if (req.body.options.sort == 'asc') {
-                    const sortedProducts = products.sort((a, b) => {
-                        return a.price - b.price; // Sắp xếp tăng dần
-                    });
-                    return sortedProducts;
-                }
-                if (req.body.options.sort == 'discount') {
-                    const productDiscounts = products.map((item) => {
-                        if (item.virtualPrice > 0) {
-                            return item;
-                        }
-                    });
-                    return productDiscounts;
-                }
+                return products;
             } else {
-                return 'Fail';
+                return [];
             }
         } catch (e) {
             console.error(e.message);

@@ -164,6 +164,8 @@ model Product {
   ctvPrice Float?
   sellPrice Float?
   virtualPrice Float?
+
+  numberSold Int? @default(0)
   image String?
   imageList String[] @default([])
   productCIdList String[] @default([])
@@ -194,6 +196,7 @@ model ProductDetail {
   orderDetailIdList String[] @default([])
 
   sizeId String?
+  colorId String?
 
   @@map("productDetail")
 }
@@ -205,10 +208,15 @@ model Orders {
   orderCode String?
   createDate DateTime @default(now())
   updateDate DateTime @default(now())
+  ctvName String?
+  ctvNote String?
+  noteImage String?
   customerName String?
   customerPhone String?
-  address Json
+  address Json?
+  addressDetail String?
   paid Boolean
+  CODPrice Float?
   orderDetailIdList String[] @default([])
   deliveryCode String?
   commission Float?
@@ -222,6 +230,10 @@ model Orders {
 
 model OrderDetail {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  productName String?
+  color String?
+  size String?
+  image String?
   quantity Int
   price Float
   orderId String

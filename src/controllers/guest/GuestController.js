@@ -24,7 +24,7 @@ class GuestController {
         app.get('/api/type-by-category/:categoryId', this.findTypesByCategory);
         app.post('/api/get-product-by-category/:categoryId/:take/:step', this.findProductByCategory);
         app.post('/api/get-product-by-categoryName/:categoryName/:take/:step', this.findProductByCategoryName);
-
+        app.post('/api/get-new-product/:take/:step', this.findNewProducts);
     }
     async findAllCategories(req, res) {
         try {
@@ -173,6 +173,21 @@ class GuestController {
             const take = req.params.take;
             const step = req.params.step;
             const products = await ProductService.findProductByCategoryName(categoryName, take, step, req);
+            if (products != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch(e) {
+            console.log(e.message)
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findNewProducts(req, res) {
+        try {
+            const take = req.params.take;
+            const step = req.params.step;
+            const products = await ProductService.findNewProducts(take, step, req);
             if (products != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', products });
             } else {

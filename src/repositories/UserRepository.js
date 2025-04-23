@@ -15,7 +15,6 @@ class UserRepository extends BaseRepository {
     }
 
     findUserByEmailAndPassword(email, password) {
-        console.log(this.db, email, password);
         return this.db.findUnique({
             where: { email: email, password: password },
         });

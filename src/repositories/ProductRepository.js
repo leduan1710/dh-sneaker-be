@@ -421,13 +421,78 @@ class ProductRepository extends BaseRepository {
         const res = await this.getSold(products, groupedProductDetails);
         return res;
     }
+    async findNewProducts(take, step, req) {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const orderByCondition =
+            req.body.options.sort === 'bestSelling'
+                ? { numberSold: 'desc' }
+                : req.body.options.sort === 'newest'
+                ? { createDate: 'desc' }
+                : req.body.options.sort === 'oldest'
+                ? { createDate: 'asc' }
+                : req.body.options.sort === 'asc'
+                ? { sellPrice: 'asc' }
+                : { sellPrice: 'desc' };
+
+        const products = await this.db.findMany({
+            where: {
+                active: true,
+                createDate: {
+                    gte: oneWeekAgo,
+                },
+
+            },
+            select: {
+                id: true,
+                name: true,
+                sellPrice: true,
+                virtualPrice: true,
+                image: true,
+                colorId: true,
+            },
+            take: parseInt(take),
+            skip: (step - 1) * take,
+            orderBy: orderByCondition
+        });
+
+        const productIds = products.map((item) => item.id);
+
+        // Lấy số lượng đã bán
+        const groupedProductDetails = await this.dbProductDetail.groupBy({
+            by: ['productId'],
+            where: {
+                productId: {
+                    in: productIds,
+                },
+                ...(req.body.options.sizeIds ? { sizeId: { in: req.body.options.sizeIds } } : {}),
+                active: true,
+            },
+            _sum: {
+                numberSold: true,
+            },
+            orderBy: {
+                _sum: {
+                    numberSold: 'desc',
+                },
+            },
+        });
+
+        const filteredProducts = products.filter((product) =>
+            groupedProductDetails.some((detail) => detail.productId === product.id),
+        );
+
+        const res = await this.getSold(filteredProducts, groupedProductDetails);
+        return res;
+    }
     async findProductByCategory(categoryId, take, step, req) {
         //product
         const products = await this.db.findMany({
             where: {
                 categoryId: categoryId,
                 active: true,
-                ...(req.body.options.typeIds ? { brandId: { in: req.body.options.typeIds } } : {}), // Lọc nhiều loại
+                ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}), // Lọc nhiều loại
                 ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}), // Lọc nhiều kiểu
                 ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}), // Lọc nhiều màu
             },
@@ -463,8 +528,8 @@ class ProductRepository extends BaseRepository {
                 },
             },
         });
-        const filteredProducts = products.filter(product =>
-            groupedProductDetails.some(detail => detail.productId === product.id)
+        const filteredProducts = products.filter((product) =>
+            groupedProductDetails.some((detail) => detail.productId === product.id),
         );
         const res = await this.getSold(filteredProducts, groupedProductDetails);
         return res;
@@ -478,20 +543,31 @@ class ProductRepository extends BaseRepository {
                 id: true,
             },
         });
-    
+
         if (!category) {
             throw new Error('Category not found');
         }
-    
-        const categoryId = category.id; 
-    
+        const orderByCondition =
+            req.body.options.sort === 'bestSelling'
+                ? { numberSold: 'desc' }
+                : req.body.options.sort === 'newest'
+                ? { createDate: 'desc' }
+                : req.body.options.sort === 'oldest'
+                ? { createDate: 'asc' }
+                : req.body.options.sort === 'asc'
+                ? { sellPrice: 'asc' }
+                : { sellPrice: 'desc' };
+
+        const categoryId = category.id;
+
         const products = await this.db.findMany({
             where: {
                 categoryId: categoryId,
                 active: true,
-                ...(req.body.options.typeIds ? { brandId: { in: req.body.options.typeIds } } : {}),
+                ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}),
                 ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
                 ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
+                ...(req.body.options.sort === "discount" ? { virtualPrice: { not: null } } : {}),
             },
             select: {
                 id: true,
@@ -501,12 +577,13 @@ class ProductRepository extends BaseRepository {
                 image: true,
                 colorId: true,
             },
-            ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { take: parseInt(take) }),
-            ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { skip: (step - 1) * take }),
+            take: parseInt(take),
+            skip: (step - 1) * take,
+            orderBy: orderByCondition,
         });
-    
+
         const productIds = products.map((item) => item.id);
-    
+
         // Số lượng đã bán
         const groupedProductDetails = await this.dbProductDetail.groupBy({
             by: ['productId'],
@@ -526,11 +603,11 @@ class ProductRepository extends BaseRepository {
                 },
             },
         });
-    
-        const filteredProducts = products.filter(product =>
-            groupedProductDetails.some(detail => detail.productId === product.id)
+
+        const filteredProducts = products.filter((product) =>
+            groupedProductDetails.some((detail) => detail.productId === product.id),
         );
-    
+
         const res = await this.getSold(filteredProducts, groupedProductDetails);
         return res;
     }

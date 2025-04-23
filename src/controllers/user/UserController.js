@@ -16,6 +16,8 @@ class UserController {
         app.post('/user/update-default-address', isAuth, this.updateDefaultAddress);
         app.post('/user/change-password', isAuth, this.changePassword);
         app.post('/user/change-password-2fa', isAuth, this.changePassword_2fa);
+
+        app.post('/user/handle-order', isAuth, this.handleOrder);
     }
     async changePassword(req, res) {
         try {
@@ -133,18 +135,70 @@ class UserController {
             if (user == 'Fail') {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
-            if (user.role == 'CTV') {
-                const activeShop = await ShopRepository.find(user.shopId, {
-                    select: {
-                        active: true,
-                    },
-                });
-                user.activeShop = activeShop;
-                return res.status(httpStatus.OK).json({ message: 'Success', user });
-            }
+            // if (user.role == 'CTV') {
+            //     const activeShop = await ShopRepository.find(user.shopId, {
+            //         select: {
+            //             active: true,
+            //         },
+            //     });
+            //     user.activeShop = activeShop;
+            //     return res.status(httpStatus.OK).json({ message: 'Success', user });
+            // }
             return res.status(httpStatus.OK).json({ message: 'Success', user });
         } catch (e) {
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    // async handleOrder(req, res) {
+    //     try {
+    //         const orders = await UserService.handleOrder(req);
+    //         if (orders != 'Fail') {
+    //             return res.status(httpStatus.OK).json({ message: 'Success', orders });
+    //         } else {
+    //             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+    //         }
+    //     } catch {
+    //         return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+    //     }
+    // }
+    async handleOrder(req, res) {
+        try {
+            publicUploadFile(req, res, async function (err) {
+                if (err) {
+                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
+                }
+
+                if (req.file) {
+                    req.body.noteImage = req.file.path.slice(req.file.path.indexOf('uploads'));
+                } else {
+                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Image is required' });
+                }
+                const { userId, ctvName, ctvNote, customerName, customerPhone, addressDetail, address, shipMethod, paid, CODPrice, shipFee, listOrderDetail } = req.body;
+                const orders = await UserService.handleOrder({
+                    userId,
+                    ctvName,
+                    ctvNote,
+                    customerName,
+                    customerPhone,
+                    addressDetail,
+                    address: JSON.parse(address),
+                    shipMethod,
+                    paid: paid === 'true',
+                    CODPrice: parseFloat(CODPrice),
+                    shipFee: parseFloat(shipFee),
+                    listOrderDetail: JSON.parse(listOrderDetail),
+                    noteImage: req.body.noteImage, // Thêm trường hình ảnh vào đối tượng đơn hàng
+                });
+                if (orders != 'Fail') {
+                    return res.status(httpStatus.OK).json({ message: 'Success', orders });
+                } else {
+                    return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
 }
