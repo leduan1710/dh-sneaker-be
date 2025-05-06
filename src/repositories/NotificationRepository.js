@@ -25,7 +25,6 @@ class NotificationRepository extends BaseRepository {
         return this.db.findMany({
             where: {
                 userId: userId,
-                isCTV: true,
             },
             orderBy: {
                 createDate: 'desc',

@@ -5,6 +5,8 @@ import { isAuth } from '../../middleware/auth.middleware.js';
 import UserService from '../../services/ctv/UserService.js';
 import UserRepository from '../../repositories/UserRepository.js';
 import { publicUploadFile, publicUploadFileTemporary } from '../../middleware/upload.middleware.js';
+import NotificationRepository from '../../repositories/NotificationRepository.js';
+import OrderService from '../../services/OrderService.js';
 
 class UserController {
     initRoutes(app) {
@@ -16,8 +18,11 @@ class UserController {
         app.post('/user/update-default-address', isAuth, this.updateDefaultAddress);
         app.post('/user/change-password', isAuth, this.changePassword);
         app.post('/user/change-password-2fa', isAuth, this.changePassword_2fa);
-
         app.post('/user/handle-order', isAuth, this.handleOrder);
+        app.get('/user/get-notification', isAuth, this.getNotificationByUser);
+        app.get('/user/read-notification/:notificationId', isAuth, this.handleReadNotification);
+        app.get('/user/get-orders-by-ctv/:month/:year', isAuth, this.findAllOrderByCTV);
+
     }
     async changePassword(req, res) {
         try {
@@ -171,10 +176,22 @@ class UserController {
 
                 if (req.file) {
                     req.body.noteImage = req.file.path.slice(req.file.path.indexOf('uploads'));
-                } else {
-                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Image is required' });
                 }
-                const { userId, ctvName, ctvNote, customerName, customerPhone, addressDetail, address, shipMethod, paid, CODPrice, shipFee, listOrderDetail } = req.body;
+
+                const {
+                    userId,
+                    ctvName,
+                    ctvNote,
+                    customerName,
+                    customerPhone,
+                    addressDetail,
+                    address,
+                    shipMethod,
+                    paid,
+                    CODPrice,
+                    shipFee,
+                    listOrderDetail,
+                } = req.body;
                 const orders = await UserService.handleOrder({
                     userId,
                     ctvName,
@@ -182,13 +199,13 @@ class UserController {
                     customerName,
                     customerPhone,
                     addressDetail,
-                    address: JSON.parse(address),
+                    address: address ? JSON.parse(address) : null,
                     shipMethod,
                     paid: paid === 'true',
                     CODPrice: parseFloat(CODPrice),
                     shipFee: parseFloat(shipFee),
                     listOrderDetail: JSON.parse(listOrderDetail),
-                    noteImage: req.body.noteImage, // Thêm trường hình ảnh vào đối tượng đơn hàng
+                    noteImage: req.body.noteImage ? req.body.noteImage : null,
                 });
                 if (orders != 'Fail') {
                     return res.status(httpStatus.OK).json({ message: 'Success', orders });
@@ -199,6 +216,56 @@ class UserController {
         } catch (error) {
             console.error(error);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+    async getNotificationByUser(req, res) {
+        try {
+            const userId = req.user.id;
+            const notifications = await UserService.getNotificationByUser(userId);
+            if (notifications) {
+                return res.status(httpStatus.OK).json({ message: 'Success', notifications });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch (e) {
+            console.error(e.message);
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async handleReadNotification(req, res) {
+        try {
+            const notificationId = req.params.notificationId;
+            const notification = await NotificationRepository.find(notificationId);
+            if (notification.userId != req.user.id) {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            const notification_new = await NotificationRepository.update(notificationId, { status: 'SEEN' });
+            if (notification_new) {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch (e) {
+            console.error(e.message);
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllOrderByCTV(req, res) {
+        try {
+            const userId = req.body.userId;
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+
+            const orders = await OrderService.getAllOrderByCTVName(userId, month, year);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
 }

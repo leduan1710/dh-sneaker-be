@@ -224,6 +224,7 @@ model Orders {
   shipFee Float?
   userId String
   status String
+  orderDescribe String?
   isOnline Boolean @default(true)
   @@map("orders")
 }
@@ -235,12 +236,26 @@ model OrderDetail {
   size String?
   image String?
   quantity Int
-  price Float
+  importPrice Float?
+  ctvPrice Float?
+  sellPrice Float?
   orderId String
   productDetailId String
   @@map("orderDetail")
 }
 
+model Commission {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId String?
+  ctvName String?
+  commission Float?
+  bonus Float? @default(0)
+  total Float?
+  isPaid Boolean @default(false)
+  month Int
+  year Int
+  @@map("commission")
+}
 //BANNER
 
 model Banner {

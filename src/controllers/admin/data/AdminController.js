@@ -9,26 +9,30 @@ import OrderService from '../../../services/OrderService.js';
 import OrderDetailService from '../../../services/OrderDetailService.js';
 import UserService from '../../../services/ctv/UserService.js';
 import UserRepository from '../../../repositories/UserRepository.js';
+import CategoryService from '../../../services/CategoryService.js';
+import CommissionService from '../../../services/CommissionService.js';
 
 class AdminController {
     initRoutes(app) {
         app.post('/admin/add/category', isAuth, this.addCategory);
         app.get('/admin/get/categories', isAuth, this.findAllCategories);
+        app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
         app.post('/admin/add/product', isAuth, this.addProduct);
 
-        app.get('/admin/get-new-orders/:take/:step', this.findNewOrderByStep);
-        app.get('/admin/get-orders/:take/:step', this.findAllOrderByStep);
+        app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
+        app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
+        app.get('/admin/get-orders-by-ctv/:ctvName', isAuth, this.findAllOrderByCTVName);
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.get('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
+        app.post('/admin/update/order-cancelled/:orderId', isAuth, this.cancelledOrder);
 
-        app.get('/admin/update/order-cancelled/:orderId', isAuth, this.cancelledOrder);
+        app.get('/admin/get/commission-by-month-year/:month/:year', isAuth, this.commissionStatistic);
+        app.get('/admin/commission-paid-confirm/:commissionId', isAuth, this.confirmCommissionIsPaid);
 
         app.get('/admin/get/users', isAuth, this.findAllUsers);
         app.post('/admin/ban-user/:userId', isAuth, this.banUser);
         app.post('/admin/unban-user/:userId', isAuth, this.unBanUser);
-
-
     }
     async addProduct(req, res) {
         try {
@@ -143,7 +147,7 @@ class AdminController {
     async findAllCategories(req, res) {
         try {
             if (true) {
-                const categories = await GetDataService.getAllCategories();
+                const categories = await CategoryService.getAllCategories();
                 if (categories) {
                     return res.status(httpStatus.OK).json({ message: 'Success', categories });
                 } else {
@@ -151,6 +155,20 @@ class AdminController {
                 }
             } else {
                 return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async getCTVNameList(req, res) {
+        try {
+            const ctvNameList = await UserService.getCTVNameList();
+            if (ctvNameList) {
+                return res.status(httpStatus.OK).json({ message: 'Success', ctvNameList });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -197,6 +215,24 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+    async findAllOrderByCTVName(req, res) {
+        try {
+            if (true) {
+                const ctvName = req.params.ctvName;
+                const orders = await OrderService.getAllOrderByCTVName(ctvName);
+                if (orders) {
+                    return res.status(httpStatus.OK).json({ message: 'Success', orders });
+                } else {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
 
     async findOrderDetailMany(req, res) {
         try {
@@ -224,10 +260,24 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+    async boomedOrder(req, res) {
+        try {
+            const orderId = req.params.orderId;
+            const order = await OrderService.confirmedOrder(orderId);
+            if (order != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', order });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
     async cancelledOrder(req, res) {
         try {
             const orderId = req.params.orderId;
-            const order = await OrderService.cancelledOrder(orderId);
+            const cancelReason = req.body.cancelReason;
+            const order = await OrderService.cancelledOrder(orderId, cancelReason);
             if (order != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', order });
             } else {
@@ -263,6 +313,21 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+    async confirmCommissionIsPaid(req, res) {
+        try {
+            const commissionId = req.params.commissionId;
+            console.log("id: " + commissionId)
+            const commission = await CommissionService.ConfirmCommissionIsPaid(commissionId);
+            if (commission != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', commission });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
     async findAllUsers(req, res) {
         try {
             if (AuthService.isAdmin(req)) {
@@ -317,6 +382,22 @@ class AdminController {
                 return res.status(httpStatus.OK).json({ message: 'Success' });
             } else {
                 return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+    async commissionStatistic(req, res) {
+        try {
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+
+            const commissions = await CommissionService.getCommissionByMonthAndYear(month, year);
+            if (commissions) {
+                return res.status(httpStatus.OK).json({ message: 'Success', commissions });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);

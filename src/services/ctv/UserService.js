@@ -119,6 +119,24 @@ class UserService {
             return 'Fail';
         }
     }
+    async getCTVNameList() {
+        try {
+            const users = await UserRepository.db.findMany({
+                where: {
+                    role: 'CTV',
+                },
+                select: {
+                    name: true
+                }
+            });
+            if (users) {
+                return users;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
 
     async updateUserInfo(req) {
         try {
@@ -159,14 +177,15 @@ class UserService {
 
     async handleOrder(orderData) {
         try {
-            const { listOrderDetail, ...order } = orderData; 
+            const { listOrderDetail, ...order } = orderData;
             const user = await UserRepository.find(order.userId);
-
+            const admin = await UserRepository.db.findFirst({where: {
+                role: "ADMIN"
+            }})
             const currentDate = new Date();
             const month = currentDate.getMonth() + 1;
             const year = currentDate.getFullYear();
             const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
             const orderCountInMonth = await OrderRepository.db.count({
                 where: {
@@ -178,7 +197,7 @@ class UserService {
             });
 
             const lastName = order.ctvName.split(' ').pop();
-            const orderCode = `${lastName}_T${month}_${year}_${orderCountInMonth+1}`;
+            const orderCode = `${lastName}_T${month}_${year}_${orderCountInMonth + 1}`;
             if (listOrderDetail.length > 0) {
                 order.status = 'PROCESSING';
                 order.orderCode = orderCode;
@@ -214,7 +233,23 @@ class UserService {
                         orderDetailIdList: filteredOrderDetailId,
                     });
                     if (orderRes_2) {
-                        return orderRes_2;
+                        const notification = await NotificationRepository.db.create({
+                            data: {
+                                describe: `Có đơn hàng mới`,
+                                image: 'NewOrder',
+                                link: `/orders/processing`,
+                                userId: admin.id,
+                            },
+                        });
+                        if (notification) {
+                            await UserRepository.update(admin.id, {
+                                notificationIdList: [...admin.notificationIdList, notification.id],
+                            });
+                            ReqNotification(admin.id);
+                            return orderRes_2;
+                        } else {
+                            return 'Fail';
+                        }
                     } else {
                         return 'Fail';
                     }
@@ -384,6 +419,20 @@ class UserService {
                 } else {
                     return 'Fail';
                 }
+            } else {
+                return 'Fail';
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getNotificationByUser(userId) {
+        try {
+            const notifications = await NotificationRepository.getNotificationByUserisCTV(userId);
+            if (notifications) {
+                return notifications;
             } else {
                 return 'Fail';
             }

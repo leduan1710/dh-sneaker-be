@@ -19,6 +19,7 @@ class OrderRepository extends BaseRepository {
             shipMethod: true,
             orderCode: true,
             noteImage: true,
+            commission: true,
             customerName: true,
             customerPhone: true,
             CODPrice: true,
@@ -59,7 +60,7 @@ class OrderRepository extends BaseRepository {
     async findNewOrderByShopByStep(take, step) {
         const orders = await this.db.findMany({
             where: {
-                status: "PROCESSING"
+                status: 'PROCESSING',
             },
             take: parseInt(take),
             skip: (step - 1) * take,
@@ -71,7 +72,7 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllOrderByShopByStep(take, step) {
+    async findAllOrderByStep(take, step) {
         const orders = await this.db.findMany({
             where: {
                 status: {
@@ -80,6 +81,49 @@ class OrderRepository extends BaseRepository {
             },
             take: parseInt(take),
             skip: (step - 1) * take,
+            orderBy: {
+                updateDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+    async findAllOrderByCTVName(ctvName) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+
+        const endOfMonth = new Date();
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+
+        const orders = await this.db.findMany({
+            where: {
+                ctvName: ctvName,
+                updateDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+            orderBy: {
+                updateDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+    async findAllOrderByCTV(userId, month, year) {
+        
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
+
+        const orders = await this.db.findMany({
+            where: {
+                userId: userId,
+                updateDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
             orderBy: {
                 updateDate: 'desc',
             },
