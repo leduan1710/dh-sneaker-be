@@ -32,7 +32,7 @@ export const isAuth = async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     try {
-        const verified = await jsonwebtoken.verify(token, process.env.TOKEN_SECRET);
+        const verified = jsonwebtoken.verify(token, process.env.TOKEN_SECRET);
 
         if (!verified) {
             return res.status(httpStatus.UNAUTHORIZED).json({ message: httpStatus['401_MESSAGE'] });

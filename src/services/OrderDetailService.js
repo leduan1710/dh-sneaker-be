@@ -9,5 +9,16 @@ class OrderDetailService {
             return 'Fail';
         }
     }
+    async getOrderDetailByOrderId(orderId) {
+        try {
+            const orderDetails = await OrderDetailRepository.db.findMany({where: {
+                orderId: orderId
+            }});
+            return orderDetails;
+        } catch (e) {
+            return 'Fail';
+        }
+    }
+
 }
 export default new OrderDetailService();

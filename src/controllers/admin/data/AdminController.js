@@ -11,13 +11,23 @@ import UserService from '../../../services/ctv/UserService.js';
 import UserRepository from '../../../repositories/UserRepository.js';
 import CategoryService from '../../../services/CategoryService.js';
 import CommissionService from '../../../services/CommissionService.js';
+import SizeService from '../../../services/SizeService.js';
+import axios from 'axios';
+import AdminService from '../../../services/admin/AdminService.js';
 
 class AdminController {
     initRoutes(app) {
         app.post('/admin/add/category', isAuth, this.addCategory);
         app.get('/admin/get/categories', isAuth, this.findAllCategories);
+
+        app.get('/admin/get/tokenVTP', isAuth, this.getVTPToken);
+        app.post('/admin/createVTPOrder', isAuth, this.createVTPOrder);
+
         app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
+
         app.post('/admin/add/product', isAuth, this.addProduct);
+        app.post('/admin/edit/product', isAuth, this.editProduct);
+        app.post('/admin/add/size', isAuth, this.addSize);
 
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
         app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
@@ -25,14 +35,22 @@ class AdminController {
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.get('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
+        app.get('/admin/update/order-success/:orderId', isAuth, this.succeedOrder);
+        app.get('/admin/update/order-boom/:orderId', isAuth, this.boomedOrder);
         app.post('/admin/update/order-cancelled/:orderId', isAuth, this.cancelledOrder);
 
         app.get('/admin/get/commission-by-month-year/:month/:year', isAuth, this.commissionStatistic);
         app.get('/admin/commission-paid-confirm/:commissionId', isAuth, this.confirmCommissionIsPaid);
 
         app.get('/admin/get/users', isAuth, this.findAllUsers);
-        app.post('/admin/ban-user/:userId', isAuth, this.banUser);
-        app.post('/admin/unban-user/:userId', isAuth, this.unBanUser);
+        app.post('/admin/get/user-by-email', isAuth, this.findUserByEmail);
+        app.get('/admin/ban-user/:userId', isAuth, this.banUser);
+        app.get('/admin/unban-user/:userId', isAuth, this.unBanUser);
+        app.get('/admin/confirm-user/:userId', isAuth, this.confirmCTV);
+
+        app.get('/admin/get/order-count/:month/:year', isAuth, this.getOrderCountsByMonth);
+        app.get('/admin/get/revenue-commission/:month/:year', isAuth, this.getRevenueAndCommissionByMonth);
+        app.get('/admin/get/annual-revenue/:year', isAuth, this.getAnnualRevenue);
     }
     async addProduct(req, res) {
         try {
@@ -57,7 +75,7 @@ class AdminController {
                     req.body.styleIds = JSON.parse(req.body.styleIds);
                 }
 
-                const resProduct = await ProductService.saveProduct(req.body);
+                const resProduct = await ProductService.saveProduct(req);
 
                 if (resProduct.message === 'Fail') {
                     return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
@@ -65,6 +83,62 @@ class AdminController {
                 const selectedSizes = JSON.parse(req.body.selectedSizes);
                 const product = resProduct.product;
                 const productDetails = selectedSizes.map((size) => ({
+                    productId: product.id,
+                    sizeId: size.sizeId,
+                    colorId: product.colorId,
+                    quantity: size.quantity,
+                    name: product.name,
+                    sellPrice: req.body.sellPrice,
+                    virtualPrice: req.body.virtualPrice,
+                    ctvPrice: req.body.ctvPrice,
+                    importPrice: req.body.importPrice,
+                    imageList: req.body.imageList,
+                    image: req.body.image,
+                }));
+                await Promise.all(productDetails.map((detail) => ProductDetailService.saveProductDetail(detail)));
+
+                return res.status(httpStatus.OK).json({ message: 'Success', product });
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    async editProduct(req, res) {
+        try {
+            publicUploadMultiFile(req, res, async function (err) {
+                if (err) {
+                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
+                }
+                if (req.body.oldImageList) {
+                    req.body.oldImageList = JSON.parse(req.body.oldImageList);
+                } else {
+                    req.body.oldImageList = [];
+                }
+                const newImagePaths = req.files.map((file) => file.path.slice(file.path.indexOf('uploads')));
+                req.body.imageList = [...req.body.oldImageList, ...newImagePaths];
+                req.body.image = req.body.imageList[0];
+
+                req.body.sellPrice = Number(req.body.sellPrice);
+                req.body.importPrice = Number(req.body.importPrice);
+                req.body.virtualPrice = Number(req.body.virtualPrice);
+                req.body.ctvPrice = Number(req.body.ctvPrice);
+
+                if (req.body.styleIds) {
+                    req.body.styleIds = JSON.parse(req.body.styleIds);
+                }
+
+                const resProduct = await ProductService.saveProduct(req);
+
+                if (resProduct.message === 'Fail') {
+                    return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+                }
+                const selectedSizes = JSON.parse(req.body.selectedSizes);
+                const product = resProduct.product;
+                console.log(selectedSizes);
+                const productDetails = selectedSizes.map((size) => ({
+                    id: size.productDetailId || undefined,
                     productId: product.id,
                     sizeId: size.sizeId,
                     colorId: product.colorId,
@@ -144,9 +218,24 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
+
+    async addSize(req, res) {
+        try {
+            const sizeName = req.body.otherSizeName;
+            const categoryId = req.body.categoryIdSelect;
+            const size = await SizeService.addSize(sizeName, categoryId);
+            if (size === 'Fail') {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success', size });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
     async findAllCategories(req, res) {
         try {
-            if (true) {
+            if (AuthService.isAdmin(req)) {
                 const categories = await CategoryService.getAllCategories();
                 if (categories) {
                     return res.status(httpStatus.OK).json({ message: 'Success', categories });
@@ -159,6 +248,39 @@ class AdminController {
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async getVTPToken(req, res) {
+        try {
+            const response = await axios.post('https://partner.viettelpost.vn/v2/user/Login', {
+                USERNAME: process.env.VTP_USERNAME,
+                PASSWORD: process.env.VTP_PASSWORD,
+            });
+            console.log(response.data.data);
+            const token = response.data.data.token;
+            const expired = response.data.data.expired;
+
+            if (token && expired) {
+                return res.status(httpStatus.OK).json({ message: 'Success', token, expired });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async createVTPOrder(req, res) {
+        const token = req.body.VTPToken;
+        const orderId = req.body.orderId;
+        const result = await OrderService.createOrder(orderId, token);
+
+        if (result.success) {
+            return res.status(httpStatus.OK).json({ message: 'Success', data: result.data });
+        } else {
+            return res.status(httpStatus.OK).json({ message: 'Fail', error: result.error });
         }
     }
 
@@ -178,7 +300,7 @@ class AdminController {
 
     async findNewOrderByStep(req, res) {
         try {
-            if (true) {
+            if (AuthService.isAdmin(req)) {
                 const take = req.params.take;
                 const step = req.params.step;
                 const orders = await OrderService.getNewOrderByStep(take, step);
@@ -198,7 +320,7 @@ class AdminController {
 
     async findAllOrderByStep(req, res) {
         try {
-            if (true) {
+            if (AuthService.isAdmin(req)) {
                 const take = req.params.take;
                 const step = req.params.step;
                 const orders = await OrderService.getAllOrderByStep(take, step);
@@ -215,9 +337,10 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findAllOrderByCTVName(req, res) {
         try {
-            if (true) {
+            if (AuthService.isAdmin(req)) {
                 const ctvName = req.params.ctvName;
                 const orders = await OrderService.getAllOrderByCTVName(ctvName);
                 if (orders) {
@@ -227,6 +350,54 @@ class AdminController {
                 }
             } else {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async getAnnualRevenue(req, res) {
+        try {
+            const year = parseInt(req.params.year);
+            const revenueData = await OrderService.getAnnualRevenue(year);
+
+            if (revenueData) {
+                return res.status(httpStatus.OK).json({ message: 'Success', data: revenueData });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async getRevenueAndCommissionByMonth(req, res) {
+        try {
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+            const data = await OrderService.getRevenueAndCommissionByMonth(month, year);
+            if (data) {
+                return res.status(httpStatus.OK).json({ message: 'Success', data });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async getOrderCountsByMonth(req, res) {
+        try {
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+            const orderCounts = await OrderService.getOrderCountByMonth(month, year);
+            if (orderCounts) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orderCounts });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -260,10 +431,23 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+    async succeedOrder(req, res) {
+        try {
+            const orderId = req.params.orderId;
+            const order = await OrderService.succeedOrder(orderId);
+            if (order != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', order });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
     async boomedOrder(req, res) {
         try {
             const orderId = req.params.orderId;
-            const order = await OrderService.confirmedOrder(orderId);
+            const order = await OrderService.boomedOrder(orderId);
             if (order != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', order });
             } else {
@@ -316,7 +500,7 @@ class AdminController {
     async confirmCommissionIsPaid(req, res) {
         try {
             const commissionId = req.params.commissionId;
-            console.log("id: " + commissionId)
+            console.log('id: ' + commissionId);
             const commission = await CommissionService.ConfirmCommissionIsPaid(commissionId);
             if (commission != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', commission });
@@ -334,6 +518,25 @@ class AdminController {
                 const users = await UserService.getAllUsers();
                 if (users) {
                     return res.status(httpStatus.OK).json({ message: 'Success', users });
+                } else {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+            } else {
+                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findUserByEmail(req, res) {
+        try {
+            if (AuthService.isAdmin(req)) {
+                const email = req.body.email;
+                const user = await UserService.getUserByEmail(email);
+                if (user) {
+                    return res.status(httpStatus.OK).json({ message: 'Success', user });
                 } else {
                     return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
                 }
@@ -388,6 +591,21 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
+    async confirmCTV(req, res) {
+        try {
+            const userId = req.params.userId;
+            const registerRes = await AdminService.confirmCTV(userId);
+            if (registerRes === 'Success') {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+            }
+        } catch (e) {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
     async commissionStatistic(req, res) {
         try {
             const month = parseInt(req.params.month);

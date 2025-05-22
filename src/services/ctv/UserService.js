@@ -119,6 +119,20 @@ class UserService {
             return 'Fail';
         }
     }
+
+    async getUserByEmail(email) {
+        try {
+            const user = await UserRepository.db.findMany({
+                where: { email: { contains: email, mode: 'insensitive' } },
+            });
+            if (user) {
+                return user;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
     async getCTVNameList() {
         try {
             const users = await UserRepository.db.findMany({
@@ -126,8 +140,8 @@ class UserService {
                     role: 'CTV',
                 },
                 select: {
-                    name: true
-                }
+                    name: true,
+                },
             });
             if (users) {
                 return users;
@@ -179,9 +193,11 @@ class UserService {
         try {
             const { listOrderDetail, ...order } = orderData;
             const user = await UserRepository.find(order.userId);
-            const admin = await UserRepository.db.findFirst({where: {
-                role: "ADMIN"
-            }})
+            const admin = await UserRepository.db.findFirst({
+                where: {
+                    role: 'ADMIN',
+                },
+            });
             const currentDate = new Date();
             const month = currentDate.getMonth() + 1;
             const year = currentDate.getFullYear();
@@ -199,6 +215,81 @@ class UserService {
             const lastName = order.ctvName.split(' ').pop();
             const orderCode = `${lastName}_T${month}_${year}_${orderCountInMonth + 1}`;
             if (listOrderDetail.length > 0) {
+                order.status = 'PROCESSING';
+                order.orderCode = orderCode;
+                const orderRes = await OrderRepository.db.create({ data: order });
+
+                if (orderRes) {
+                    //
+                    const orderIdList_new = [...user.orderIdList, orderRes.id];
+                    await UserRepository.update(user.id, { orderIdList: orderIdList_new });
+                    //
+                    const listOrderDetailId = await Promise.all(
+                        listOrderDetail.map(async (orderDetail) => {
+                            orderDetail.orderId = orderRes.id;
+                            const productDetail = await ProductDetailRepository.find(orderDetail.productDetailId);
+                            if (!productDetail) {
+                                return 'Fail';
+                            }
+                            if (productDetail.quantity < orderDetail.quantity) {
+                                await OrderRepository.delete(orderRes.id);
+                                return 'Fail';
+                            }
+                            await ProductDetailRepository.update(productDetail.id, {
+                                quantity: productDetail.quantity - orderDetail.quantity,
+                            });
+                            const resOrderDetail = await OrderDetailRepository.db.create({ data: orderDetail });
+                            if (resOrderDetail) {
+                                return resOrderDetail.id;
+                            }
+                        }),
+                    );
+                    const filteredOrderDetailId = listOrderDetailId.filter((id) => id !== null);
+                    const orderRes_2 = await OrderRepository.update(orderRes.id, {
+                        orderDetailIdList: filteredOrderDetailId,
+                    });
+                    if (orderRes_2) {
+                        const notification = await NotificationRepository.db.create({
+                            data: {
+                                describe: `Có đơn hàng mới`,
+                                image: 'NewOrder',
+                                link: `/orders/processing`,
+                                userId: admin.id,
+                            },
+                        });
+                        if (notification) {
+                            await UserRepository.update(admin.id, {
+                                notificationIdList: [...admin.notificationIdList, notification.id],
+                            });
+                            ReqNotification(admin.id);
+                            return orderRes_2;
+                        } else {
+                            return 'Fail';
+                        }
+                    } else {
+                        return 'Fail';
+                    }
+                } else {
+                    return 'Fail';
+                }
+            } else {
+                return 'Fail';
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+    async EditOrder(orderData) {
+        try {
+            const { order } = orderData;
+            const user = await UserRepository.find(order.userId);
+            const admin = await UserRepository.db.findFirst({
+                where: {
+                    role: 'ADMIN',
+                },
+            });
+            if (order.status === 'PROCESSING') {
                 order.status = 'PROCESSING';
                 order.orderCode = orderCode;
                 const orderRes = await OrderRepository.db.create({ data: order });

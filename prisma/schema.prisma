@@ -226,6 +226,7 @@ model Orders {
   status String
   orderDescribe String?
   isOnline Boolean @default(true)
+  isJibbitz Boolean @default(false)
   @@map("orders")
 }
 

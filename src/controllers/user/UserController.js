@@ -7,6 +7,7 @@ import UserRepository from '../../repositories/UserRepository.js';
 import { publicUploadFile, publicUploadFileTemporary } from '../../middleware/upload.middleware.js';
 import NotificationRepository from '../../repositories/NotificationRepository.js';
 import OrderService from '../../services/OrderService.js';
+import OrderDetailService from '../../services/OrderDetailService.js';
 
 class UserController {
     initRoutes(app) {
@@ -19,9 +20,13 @@ class UserController {
         app.post('/user/change-password', isAuth, this.changePassword);
         app.post('/user/change-password-2fa', isAuth, this.changePassword_2fa);
         app.post('/user/handle-order', isAuth, this.handleOrder);
+        app.post('/user/edit-order', isAuth, this.editOrder);
+
         app.get('/user/get-notification', isAuth, this.getNotificationByUser);
         app.get('/user/read-notification/:notificationId', isAuth, this.handleReadNotification);
         app.get('/user/get-orders-by-ctv/:month/:year', isAuth, this.findAllOrderByCTV);
+        app.post('/user/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
+        app.get('/user/get/orderDetail/:orderId', isAuth, this.findOrderDetail);
 
     }
     async changePassword(req, res) {
@@ -218,6 +223,62 @@ class UserController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
+    async editOrder(req, res) {
+        try {
+            publicUploadFile(req, res, async function (err) {
+                if (err) {
+                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
+                }
+
+                if (req.file) {
+                    req.body.noteImage = req.file.path.slice(req.file.path.indexOf('uploads'));
+                }
+
+                const {
+                    id,
+                    userId,
+                    ctvName,
+                    ctvNote,
+                    customerName,
+                    customerPhone,
+                    addressDetail,
+                    address,
+                    shipMethod,
+                    paid,
+                    CODPrice,
+                    shipFee,
+                } = req.body;
+                req.body.address = req.body.address ? JSON.parse(req.body.address) : null;
+                req.body.paid = req.paid === 'true';
+                req.body.CODPrice = parseFloat(req.body.CODPrice)
+                req.body.shipFee = parseFloat(req.body.shipFee)
+
+                const order = await OrderService.saveOrder(req)
+                // const orders = await UserService.handleOrder({
+                //     userId,
+                //     ctvName,
+                //     ctvNote,
+                //     customerName,
+                //     customerPhone,
+                //     addressDetail,
+                //     address: address ? JSON.parse(address) : null,
+                //     shipMethod,
+                //     paid: paid === 'true',
+                //     CODPrice: parseFloat(CODPrice),
+                //     shipFee: parseFloat(shipFee),
+                //     noteImage: req.body.noteImage ? req.body.noteImage : null,
+                // });
+                if (order != 'Fail') {
+                    return res.status(httpStatus.OK).json({ message: 'Success', order });
+                } else {
+                    return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
     async getNotificationByUser(req, res) {
         try {
             const userId = req.user.id;
@@ -257,7 +318,7 @@ class UserController {
             const month = parseInt(req.params.month);
             const year = parseInt(req.params.year);
 
-            const orders = await OrderService.getAllOrderByCTVName(userId, month, year);
+            const orders = await OrderService.getAllOrderByCTV(userId, month, year);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -266,6 +327,33 @@ class UserController {
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+    async findOrderDetailMany(req, res) {
+        try {
+            const orderDetailIdList = req.body.orderDetailIdList;
+            const orderDetails = await OrderDetailService.getOrderDetailByListId(orderDetailIdList);
+            if (orderDetails) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orderDetails });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findOrderDetail(req, res) {
+        try {
+            const orderId = req.params.orderId;
+            const order = await OrderService.getOrderById(orderId);
+            const orderDetails = await OrderDetailService.getOrderDetailByOrderId(orderId);
+            if (order && orderDetails) {
+                return res.status(httpStatus.OK).json({ message: 'Success', order, orderDetails });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
 }

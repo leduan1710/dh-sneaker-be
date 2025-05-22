@@ -125,7 +125,7 @@ export default class BaseRepository {
     }
 
     save(req) {
-        const id = req.params?.id;
+        const id = req.params?.id || req.id;
         const body = req.body || {};
         let data = {};
         const fields = this.getFields();
@@ -153,8 +153,8 @@ export default class BaseRepository {
         return this.db.create({ data: data });
     }
     saveUpload(req) {
-        const id = req?.id;
-        const body = req || {};
+        const id = req?.body.id;
+        const body = req.body || {};
         let data = {};
         const fields = this.getFields();
         fields.forEach((field) => {

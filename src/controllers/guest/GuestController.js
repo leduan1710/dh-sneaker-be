@@ -8,6 +8,7 @@ import SizeRepository from '../../repositories/SizeRepository.js';
 import StylesRepository from '../../repositories/StylesRepository.js';
 import ColorRepository from '../../repositories/ColorRepository.js';
 import TypeRepository from '../../repositories/TypeRepository.js';
+import SizeService from '../../services/SizeService.js';
 
 class GuestController {
     initRoutes(app) {
@@ -21,6 +22,8 @@ class GuestController {
         app.get('/api/all-style', this.findAllStyle);
         app.get('/api/all-color', this.findAllColor);
         app.get('/api/all-type', this.findAllType);
+        app.get('/api/size-by-category/:categoryId', this.findSizesByCategory);
+
         app.get('/api/type-by-category/:categoryId', this.findTypesByCategory);
         app.post('/api/get-product-by-category/:categoryId/:take/:step', this.findProductByCategory);
         app.post('/api/get-product-by-categoryName/:categoryName/:take/:step', this.findProductByCategoryName);
@@ -137,6 +140,17 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+    async findSizesByCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+
+            const sizes = await SizeService.findSizesByCategory(categoryId);
+            if (sizes) return res.status(httpStatus.OK).json({ message: 'Success', sizes });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
     async findTypesByCategory(req, res) {
         try {
             const categoryId = req.params.categoryId;
@@ -178,8 +192,8 @@ class GuestController {
             } else {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
-        } catch(e) {
-            console.log(e.message)
+        } catch (e) {
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
@@ -193,8 +207,8 @@ class GuestController {
             } else {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
-        } catch(e) {
-            console.log(e.message)
+        } catch (e) {
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }

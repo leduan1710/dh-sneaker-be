@@ -6,7 +6,8 @@ import SizeRepository from '../repositories/SizeRepository.js';
 class ProductDetailService {
     async saveProductDetail(req) {
         try {
-            const productDetail = await ProductDetailRepository.saveUpload(req);
+            console.log(req)
+            const productDetail = await ProductDetailRepository.save(req);
             
             await ProductRepository.db.update({
                 where: {
@@ -53,6 +54,7 @@ class ProductDetailService {
             return 'Fail';
         }
     }
+
     async findProductDetailMany(req) {
         try {
             const productDetails = await ProductDetailRepository.db.findMany({

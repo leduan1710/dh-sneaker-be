@@ -1,5 +1,7 @@
 import { SHIPMETHOD } from '@prisma/client';
 import BaseRepository from './BaseRepository.js';
+import OrderDetailRepository from './OrderDetailRepository.js';
+import CommissionRepository from './CommissionRepository.js';
 
 class OrderRepository extends BaseRepository {
     modelName = 'Orders';
@@ -27,6 +29,8 @@ class OrderRepository extends BaseRepository {
             userId: true,
             status: true,
             updateDate: true,
+            createDate: true,
+            deliveryCode: true,
         };
     }
 
@@ -112,7 +116,6 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
     async findAllOrderByCTV(userId, month, year) {
-        
         const startOfMonth = new Date(year, month - 1, 1);
         const endOfMonth = new Date(year, month, 0);
 
@@ -130,6 +133,134 @@ class OrderRepository extends BaseRepository {
             select: this.defaultSelect,
         });
         return orders;
+    }
+
+    async getRevenueAndCommissionByMonth(month, year) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
+
+        const result = {
+            revenue: 0,
+            commission: 0,
+            bonus: 0,
+        };
+
+        const successfulOrders = await this.db.findMany({
+            where: {
+                status: 'SUCCESS',
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+        });
+
+        const orderDetailIds = successfulOrders.flatMap((order) => order.orderDetailIdList);
+
+        const orderDetails = await OrderDetailRepository.db.findMany({
+            where: {
+                id: { in: orderDetailIds },
+            },
+        });
+
+        orderDetails.forEach((detail) => {
+            const revenueFromDetail = (detail.ctvPrice - detail.importPrice) * detail.quantity;
+            result.revenue += revenueFromDetail;
+        });
+
+        const commissions = await CommissionRepository.db.findMany({
+            where: {
+                month: month,
+                year: year,
+            },
+            select: {
+                commission: true,
+                bonus: true,
+            },
+        });
+
+        commissions.forEach((comm) => {
+            result.commission += comm.commission || 0;
+            result.bonus += comm.bonus || 0;
+        });
+
+        return result;
+    }
+
+    async orderCountByMonth(month, year) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
+
+        const orderCounts = {
+            SUCCESS: 0,
+            CANCEL: 0,
+            BOOM: 0,
+            PROCESSING: 0,
+        };
+
+        const orders = await this.db.findMany({
+            where: {
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+            select: {
+                status: true,
+            },
+        });
+
+        orders.forEach((order) => {
+            if (orderCounts.hasOwnProperty(order.status)) {
+                orderCounts[order.status]++;
+            }
+        });
+
+        return orderCounts;
+    }
+
+    async getAnnualRevenue(year) {
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31);
+
+        const successOrders = await this.db.findMany({
+            where: {
+                status: 'SUCCESS',
+                createDate: {
+                    gte: startOfYear,
+                    lte: endOfYear,
+                },
+            },
+        });
+
+        const orderDetailIds = successOrders.flatMap((order) => order.orderDetailIdList);
+
+        const orderDetails = await OrderDetailRepository.db.findMany({
+            where: {
+                id: { in: orderDetailIds },
+            },
+        });
+
+        const revenueData = Array(12).fill(0);
+
+        successOrders.forEach((order) => {
+            const orderDate = new Date(order.createDate);
+            const orderMonth = orderDate.getMonth(); // 0-11
+
+            orderDetails.forEach((detail) => {
+                if (order.orderDetailIdList.includes(detail.id)) {
+                    const revenueFromDetail = (detail.ctvPrice - detail.importPrice) * detail.quantity;
+                    revenueData[orderMonth] += revenueFromDetail;
+                }
+            });
+        });
+
+        const result = revenueData.map((revenue, index) => ({
+            month: index + 1,
+            revenue: revenue,
+        }));
+
+        return result;
     }
 
     async getPriceOrder(orderId) {

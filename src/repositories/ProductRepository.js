@@ -423,7 +423,7 @@ class ProductRepository extends BaseRepository {
     }
     async findNewProducts(take, step, req) {
         const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 60);
 
         const orderByCondition =
             req.body.options.sort === 'bestSelling'

@@ -29,14 +29,13 @@ class AuthController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
-    
+
     async verifyOtp(req, res) {
         try {
             const user = await UserRepository.findByEmail(req.body.email);
             if (user) {
                 if (user.codeExpiry < new Date().getTime()) {
                     return res.status(httpStatus.OK).json({ message: 'Code expired' });
-                
                 }
                 if (String(user.code) == req.body.code) {
                     await UserRepository.update(user.id, { codeExpiry: null, code: null, status: 'ACTIVE' });
@@ -196,26 +195,7 @@ class AuthController {
         try {
             const registerRes = await AuthService.register(req);
             if (typeof registerRes === 'number') {
-                const transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: {
-                        user: 'chauthuanphat10@gmail.com',
-                        pass: process.env.GGP,
-                    },
-                });
-                const mailOptions = {
-                    from: 'chauthuanphat10@gmail.com',
-                    to: req.body.email,
-                    subject: 'Your OTP ',
-                    text: String(registerRes),
-                };
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                        res.status(500).send(error.message);
-                    } else {
-                        res.status(httpStatus.OK).json({ message: 'Email sent successfully' });
-                    }
-                });
+                return res.status(httpStatus.OK).json({ message: 'Success' });
             } else if (registerRes == 'Account have already exist') {
                 return res.status(httpStatus.OK).json({ message: 'Account have already exist' });
             } else {
