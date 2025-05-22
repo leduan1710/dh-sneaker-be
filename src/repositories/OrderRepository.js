@@ -43,7 +43,7 @@ class OrderRepository extends BaseRepository {
                 userId: req.user.id,
             },
             orderBy: {
-                updateDate: 'desc',
+                createDate: 'desc',
             },
             select: this.defaultSelect,
         });
@@ -55,7 +55,7 @@ class OrderRepository extends BaseRepository {
                 shopId: shopId,
             },
             orderBy: {
-                updateDate: 'desc',
+                createDate: 'desc',
             },
             select: this.defaultSelect,
         });
@@ -86,12 +86,36 @@ class OrderRepository extends BaseRepository {
             take: parseInt(take),
             skip: (step - 1) * take,
             orderBy: {
-                updateDate: 'desc',
+                createDate: 'desc',
             },
             select: this.defaultSelect,
         });
         return orders;
     }
+
+    async findAllOrderThisMonth() {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+
+        const endOfMonth = new Date();
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+
+        const orders = await this.db.findMany({
+            where: {
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+
     async findAllOrderByCTVName(ctvName) {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
@@ -103,18 +127,43 @@ class OrderRepository extends BaseRepository {
         const orders = await this.db.findMany({
             where: {
                 ctvName: ctvName,
-                updateDate: {
+                createDate: {
                     gte: startOfMonth,
                     lte: endOfMonth,
                 },
             },
             orderBy: {
-                updateDate: 'desc',
+                createDate: 'desc',
             },
             select: this.defaultSelect,
         });
         return orders;
     }
+
+    async findOrderByPhoneOrDeliveringCodeThisMonth(searchTerm) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+
+        const endOfMonth = new Date();
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+
+        const orders = await this.db.findMany({
+            where: {
+                ctvName: ctvName,
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+
     async findAllOrderByCTV(userId, month, year) {
         const startOfMonth = new Date(year, month - 1, 1);
         const endOfMonth = new Date(year, month, 0);
@@ -122,13 +171,13 @@ class OrderRepository extends BaseRepository {
         const orders = await this.db.findMany({
             where: {
                 userId: userId,
-                updateDate: {
+                createDate: {
                     gte: startOfMonth,
                     lte: endOfMonth,
                 },
             },
             orderBy: {
-                updateDate: 'desc',
+                createDate: 'desc',
             },
             select: this.defaultSelect,
         });

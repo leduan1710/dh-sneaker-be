@@ -4,10 +4,10 @@ import ProductRepository from '../repositories/ProductRepository.js';
 import SizeRepository from '../repositories/SizeRepository.js';
 
 class ProductDetailService {
-    async saveProductDetail(req) {
+    async saveProductDetail(data) {
         try {
-            console.log(req)
-            const productDetail = await ProductDetailRepository.save(req);
+            console.log(data)
+            const productDetail = await ProductDetailRepository.saveNoReq(data);
             
             await ProductRepository.db.update({
                 where: {

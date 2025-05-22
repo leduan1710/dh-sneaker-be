@@ -24,7 +24,7 @@ class UserController {
 
         app.get('/user/get-notification', isAuth, this.getNotificationByUser);
         app.get('/user/read-notification/:notificationId', isAuth, this.handleReadNotification);
-        app.get('/user/get-orders-by-ctv/:month/:year', isAuth, this.findAllOrderByCTV);
+        app.get('/user/get-orders-by-ctv/:userId/:month/:year', isAuth, this.findAllOrderByCTV);
         app.post('/user/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
         app.get('/user/get/orderDetail/:orderId', isAuth, this.findOrderDetail);
 
@@ -314,10 +314,10 @@ class UserController {
 
     async findAllOrderByCTV(req, res) {
         try {
-            const userId = req.body.userId;
+            const userId = req.params.userId;
             const month = parseInt(req.params.month);
             const year = parseInt(req.params.year);
-
+            console.log(userId);
             const orders = await OrderService.getAllOrderByCTV(userId, month, year);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });

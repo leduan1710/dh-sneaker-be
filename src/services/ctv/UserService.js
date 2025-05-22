@@ -10,6 +10,7 @@ import { socketIo } from '../../index.js';
 import { ReqMessageNew, ReqNotification } from '../../controllers/socket/EmitSocket.js';
 import path from 'path';
 import ProductDetailRepository from '../../repositories/ProductDetailRepository.js';
+import CategoryRepository from '../../repositories/CategoryRepository.js';
 
 class UserService {
     /////////////////////////
@@ -192,12 +193,20 @@ class UserService {
     async handleOrder(orderData) {
         try {
             const { listOrderDetail, ...order } = orderData;
-            const user = await UserRepository.find(order.userId);
-            const admin = await UserRepository.db.findFirst({
-                where: {
-                    role: 'ADMIN',
-                },
-            });
+
+            const [user, jibbitCate, admin] = await Promise.all([
+                UserRepository.find(order.userId),
+                CategoryRepository.db.findFirst({
+                    where: {
+                        name: 'Jibbitz',
+                    },
+                }),
+                UserRepository.db.findFirst({
+                    where: {
+                        role: 'ADMIN',
+                    },
+                }),
+            ]);
             const currentDate = new Date();
             const month = currentDate.getMonth() + 1;
             const year = currentDate.getFullYear();

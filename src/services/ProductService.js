@@ -65,6 +65,35 @@ class ProductService {
             return 'Fail';
         }
     }
+    async findProductByName(searchTerm) {
+        try {
+            const product = await ProductRepository.db.findMany({
+                where: {
+                    name: { contains: searchTerm, mode: 'insensitive' },
+                },
+            });
+            if (product) {
+                return product;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+
+    async findProductByNameForGuest(req) {
+        try {
+            const product = await ProductRepository.findProductByName(req.body.name, req.body.take);
+            if (product) {
+                return product;
+            } else {
+                return 'Fail';
+            }
+        } catch {
+            return 'Fail';
+        }
+    }
+    
     async getProductById(productId) {
         try {
             const product = await ProductRepository.find(productId);
@@ -92,11 +121,7 @@ class ProductService {
     }
     async getAllProducts() {
         try {
-            const products = await ProductRepository.db.findMany({
-                where: {
-                    active: true,
-                },
-            });
+            const products = await ProductRepository.findAll();
             return products;
         } catch (e) {
             return 'Fail';

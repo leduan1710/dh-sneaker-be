@@ -54,6 +54,35 @@ class OrderService {
         }
     }
 
+    async getOrderByPhoneOrDeliveringCode(searchTerm) {
+        try {
+            const order = await OrderRepository.db.findMany({
+                where: {
+                    OR: [
+                        { deliveryCode: { contains: searchTerm, mode: 'insensitive' } },
+                        { customerPhone: { contains: searchTerm, mode: 'insensitive' } },
+                    ],
+                },
+            });
+            if (order) {
+                return order;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getAllOrderThisMonth() {
+        try {
+            const orders = await OrderRepository.findAllOrderThisMonth();
+            return orders;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+
     async getAllOrderByCTV(userId, month, year) {
         try {
             const orders = await OrderRepository.findAllOrderByCTV(userId, month, year);

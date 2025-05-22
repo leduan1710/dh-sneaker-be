@@ -5,6 +5,23 @@ import UserRepository from '../../repositories/UserRepository.js';
 import { generateAccessToken, generateRefreshToken } from '../../middleware/auth.middleware.js';
 
 class AuthService {
+    async registerSubAdmin(req) {
+        try {
+            const user = await UserRepository.findByEmail(req.body.email);
+            if (user) {
+                return 'Account have already exist';
+            }
+            req.body.password = md5(req.body.password);
+            req.body.role="SUB_ADMIN"
+            req.body.status="ACTIVE"
+            //
+            await UserRepository.save(req);
+            return 'Success';
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
     async register(req) {
         try {
             const user = await UserRepository.findByEmail(req.body.email);

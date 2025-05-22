@@ -28,7 +28,23 @@ class GuestController {
         app.post('/api/get-product-by-category/:categoryId/:take/:step', this.findProductByCategory);
         app.post('/api/get-product-by-categoryName/:categoryName/:take/:step', this.findProductByCategoryName);
         app.post('/api/get-new-product/:take/:step', this.findNewProducts);
+
+        app.post('/api/search-product-by-name', this.findProductByName);
     }
+
+    async findProductByName(req, res) {
+        try {
+            const product = await ProductService.findProductByNameForGuest(req);
+            if (product != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', product });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
     async findAllCategories(req, res) {
         try {
             const categories = await CategoryService.getAllCategories();
@@ -128,7 +144,8 @@ class GuestController {
         try {
             const colors = await ColorRepository.findAll();
             return res.status(httpStatus.OK).json({ message: 'Success', colors });
-        } catch {
+        } catch (e) {
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }

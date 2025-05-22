@@ -152,6 +152,35 @@ export default class BaseRepository {
 
         return this.db.create({ data: data });
     }
+
+    saveNoReq(body) {
+        const id = body?.id;
+        let data = {};
+        const fields = this.getFields();
+        fields.forEach((field) => {
+            let fieldName = field.name;
+            if (fieldName === 'createdAt' || fieldName === 'modifiedAt') {
+                data[fieldName] = new Date();
+            }
+            if (fieldName === 'createdBy') {
+                data[fieldName] = (req.user && req.user.id) || 0;
+            }
+            if (fieldName !== 'id') {
+                if (typeof body[fieldName] !== 'undefined') {
+                    data[fieldName] = body[fieldName];
+                }
+            }
+        });
+        if (id) {
+            return this.db.update({
+                where: { id: id },
+                data: data,
+            });
+        }
+
+        return this.db.create({ data: data });
+    }
+
     saveUpload(req) {
         const id = req?.body.id;
         const body = req.body || {};

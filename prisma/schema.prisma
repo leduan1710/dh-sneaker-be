@@ -20,6 +20,8 @@ enum Status {
 enum Role {
   CTV
   ADMIN
+  SUB_ADMIN
+  ADMIN_CTV
 }
 
 enum SHIPMETHOD {
@@ -112,9 +114,9 @@ model Category {
 model Color {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   name String
-  colorCode String
+  colorCode String?
   active Boolean @default(true)
-  categoryId String
+  categoryId String?
 
   @@map("color")
 }
@@ -226,7 +228,6 @@ model Orders {
   status String
   orderDescribe String?
   isOnline Boolean @default(true)
-  isJibbitz Boolean @default(false)
   @@map("orders")
 }
 
@@ -242,6 +243,7 @@ model OrderDetail {
   sellPrice Float?
   orderId String
   productDetailId String
+  isJibbitz Boolean @default(false)
   @@map("orderDetail")
 }
 

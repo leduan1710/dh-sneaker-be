@@ -14,24 +14,28 @@ import CommissionService from '../../../services/CommissionService.js';
 import SizeService from '../../../services/SizeService.js';
 import axios from 'axios';
 import AdminService from '../../../services/admin/AdminService.js';
+import ProductRepository from '../../../repositories/ProductRepository.js';
 
 class AdminController {
     initRoutes(app) {
         app.post('/admin/add/category', isAuth, this.addCategory);
         app.get('/admin/get/categories', isAuth, this.findAllCategories);
+        app.get('/admin/get/products', this.findAllProducts);
 
         app.get('/admin/get/tokenVTP', isAuth, this.getVTPToken);
         app.post('/admin/createVTPOrder', isAuth, this.createVTPOrder);
-
         app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
 
         app.post('/admin/add/product', isAuth, this.addProduct);
         app.post('/admin/edit/product', isAuth, this.editProduct);
+        app.get('/admin/disable-product/:productId', isAuth, this.disableProduct);
+        app.get('/admin/enable-product/:productId', isAuth, this.enableProduct);
         app.post('/admin/add/size', isAuth, this.addSize);
 
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
         app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
         app.get('/admin/get-orders-by-ctv/:ctvName', isAuth, this.findAllOrderByCTVName);
+        app.get('/admin/get-orders-this-month', isAuth, this.findAllOrderThisMonth);
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.get('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
@@ -51,7 +55,28 @@ class AdminController {
         app.get('/admin/get/order-count/:month/:year', isAuth, this.getOrderCountsByMonth);
         app.get('/admin/get/revenue-commission/:month/:year', isAuth, this.getRevenueAndCommissionByMonth);
         app.get('/admin/get/annual-revenue/:year', isAuth, this.getAnnualRevenue);
+
+        app.post('/admin/search/order-by-phone-or-delivering-code', isAuth, this.findOrderByPhoneOrDeliveringCode);
+
+        app.post('/admin/search/product-by-name', isAuth, this.findProductByName);
+        app.post('/admin/register-sub-admin', isAuth, this.registerSubAdmin);
     }
+
+    async registerSubAdmin(req, res) {
+        try {
+            const registerRes = await AuthService.registerSubAdmin(req);
+            if (registerRes === 'Success') {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else if (registerRes == 'Account have already exist') {
+                return res.status(httpStatus.OK).json({ message: 'Account have already exist' });
+            } else {
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Account creation fail ' });
+            }
+        } catch (e) {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
     async addProduct(req, res) {
         try {
             publicUploadMultiFile(req, res, async function (err) {
@@ -95,6 +120,7 @@ class AdminController {
                     imageList: req.body.imageList,
                     image: req.body.image,
                 }));
+
                 await Promise.all(productDetails.map((detail) => ProductDetailService.saveProductDetail(detail)));
 
                 return res.status(httpStatus.OK).json({ message: 'Success', product });
@@ -104,7 +130,19 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
-
+    async findAllProducts(req, res) {
+        try {
+            const products = await ProductService.getAllProducts();
+            if (products) {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
     async editProduct(req, res) {
         try {
             publicUploadMultiFile(req, res, async function (err) {
@@ -158,6 +196,50 @@ class AdminController {
         } catch (error) {
             console.error(error);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    async disableProduct(req, res) {
+        try {
+            if (AuthService.isAdmin(req)) {
+                const productId = req.params.productId;
+                const product = await ProductRepository.find(productId);
+                if (!product) {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+                const new_product = await ProductRepository.update(productId, { active: false });
+                if (!new_product) {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async enableProduct(req, res) {
+        try {
+            if (AuthService.isAdmin(req)) {
+                const productId = req.params.productId;
+                const product = await ProductRepository.find(productId);
+                if (!product) {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+                const new_product = await ProductRepository.update(productId, { active: true });
+                if (!new_product) {
+                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+                }
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
 
@@ -235,15 +317,11 @@ class AdminController {
     }
     async findAllCategories(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const categories = await CategoryService.getAllCategories();
-                if (categories) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', categories });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const categories = await CategoryService.getAllCategories();
+            if (categories) {
+                return res.status(httpStatus.OK).json({ message: 'Success', categories });
             } else {
-                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -300,17 +378,13 @@ class AdminController {
 
     async findNewOrderByStep(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const take = req.params.take;
-                const step = req.params.step;
-                const orders = await OrderService.getNewOrderByStep(take, step);
-                if (orders) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', orders });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const take = req.params.take;
+            const step = req.params.step;
+            const orders = await OrderService.getNewOrderByStep(take, step);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
-                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -320,17 +394,13 @@ class AdminController {
 
     async findAllOrderByStep(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const take = req.params.take;
-                const step = req.params.step;
-                const orders = await OrderService.getAllOrderByStep(take, step);
-                if (orders) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', orders });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const take = req.params.take;
+            const step = req.params.step;
+            const orders = await OrderService.getAllOrderByStep(take, step);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
-                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -340,16 +410,26 @@ class AdminController {
 
     async findAllOrderByCTVName(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const ctvName = req.params.ctvName;
-                const orders = await OrderService.getAllOrderByCTVName(ctvName);
-                if (orders) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', orders });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const ctvName = req.params.ctvName;
+            const orders = await OrderService.getAllOrderByCTVName(ctvName);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
-                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllOrderThisMonth(req, res) {
+        try {
+            const orders = await OrderService.getAllOrderThisMonth();
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -497,6 +577,22 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
+    async findOrderByPhoneOrDeliveringCode(req, res) {
+        try {
+            const searchTerm = req.body.searchTerm;
+            const order = await OrderService.getOrderByPhoneOrDeliveringCode(searchTerm);
+            if (order) {
+                return res.status(httpStatus.OK).json({ message: 'Success', order });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
     async confirmCommissionIsPaid(req, res) {
         try {
             const commissionId = req.params.commissionId;
@@ -514,15 +610,11 @@ class AdminController {
 
     async findAllUsers(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const users = await UserService.getAllUsers();
-                if (users) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', users });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const users = await UserService.getAllUsers();
+            if (users) {
+                return res.status(httpStatus.OK).json({ message: 'Success', users });
             } else {
-                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
@@ -532,22 +624,19 @@ class AdminController {
 
     async findUserByEmail(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const email = req.body.email;
-                const user = await UserService.getUserByEmail(email);
-                if (user) {
-                    return res.status(httpStatus.OK).json({ message: 'Success', user });
-                } else {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
+            const email = req.body.email;
+            const user = await UserService.getUserByEmail(email);
+            if (user) {
+                return res.status(httpStatus.OK).json({ message: 'Success', user });
             } else {
-                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async banUser(req, res) {
         try {
             if (AuthService.isAdmin(req)) {
@@ -614,6 +703,20 @@ class AdminController {
             const commissions = await CommissionService.getCommissionByMonthAndYear(month, year);
             if (commissions) {
                 return res.status(httpStatus.OK).json({ message: 'Success', commissions });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+    async findProductByName(req, res) {
+        try {
+            const searchTerm = req.body.name;
+            const products = await ProductService.findProductByName(searchTerm);
+            if (products) {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }

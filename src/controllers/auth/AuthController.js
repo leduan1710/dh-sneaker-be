@@ -194,7 +194,7 @@ class AuthController {
     async register(req, res) {
         try {
             const registerRes = await AuthService.register(req);
-            if (typeof registerRes === 'number') {
+            if (registerRes === "Success") {
                 return res.status(httpStatus.OK).json({ message: 'Success' });
             } else if (registerRes == 'Account have already exist') {
                 return res.status(httpStatus.OK).json({ message: 'Account have already exist' });

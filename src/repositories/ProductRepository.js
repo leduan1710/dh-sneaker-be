@@ -32,7 +32,6 @@ class ProductRepository extends BaseRepository {
             options: true,
             categoryId: true,
             shopId: true,
-            activeByShop: true,
         };
     }
     async findAllProductByShop(shopId) {
@@ -40,13 +39,11 @@ class ProductRepository extends BaseRepository {
             where: {
                 shopId: shopId,
                 active: true,
-                activeByShop: true,
             },
             select: {
                 id: true,
                 name: true,
                 active: true,
-                activeByShop: true,
                 materialId: true,
                 originId: true,
                 styleId: true,
@@ -61,7 +58,6 @@ class ProductRepository extends BaseRepository {
                 categoryId: true,
                 shopId: true,
                 percentDiscountTop: true,
-                activeByShop: true,
             },
         });
         return products;
@@ -121,7 +117,6 @@ class ProductRepository extends BaseRepository {
                 options: true,
                 categoryId: true,
                 shopId: true,
-                activeByShop: true,
             },
         });
         //
@@ -140,16 +135,12 @@ class ProductRepository extends BaseRepository {
                     mode: 'insensitive',
                 },
                 active: true,
-                activeByShop: true,
             },
-            select: {
-                name: true,
+            select:{
                 id: true,
-                price: true,
+                sellPrice: true,
                 image: true,
-                percentDiscountTop: true,
-                activeByShop: true,
-                active: true,
+                name: true,
             },
             take: take,
         });
@@ -166,7 +157,6 @@ class ProductRepository extends BaseRepository {
                     in: listProductsId,
                 },
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -186,7 +176,6 @@ class ProductRepository extends BaseRepository {
                     in: listProductsId,
                 },
                 active: true,
-                activeByShop: true,
             },
             select: {
                 id: true,
@@ -207,7 +196,6 @@ class ProductRepository extends BaseRepository {
                 //{"color":"[red,green,blue]","size":"[M,L,XL]"}
                 categoryId: true,
                 shopId: true,
-                activeByShop: true,
             },
         });
         //
@@ -224,7 +212,6 @@ class ProductRepository extends BaseRepository {
                     not: productId, //this is !=
                 },
                 active: true,
-                activeByShop: true,
             },
             take: take,
             select: {
@@ -246,7 +233,6 @@ class ProductRepository extends BaseRepository {
                 //{"color":"[red,green,blue]","size":"[M,L,XL]"}
                 categoryId: true,
                 shopId: true,
-                activeByShop: true,
             },
         });
         const productIds = products.map((item) => item.id);
@@ -259,7 +245,6 @@ class ProductRepository extends BaseRepository {
                     in: productIds,
                 },
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -278,7 +263,6 @@ class ProductRepository extends BaseRepository {
         const products = await this.db.findMany({
             where: {
                 active: true,
-                activeByShop: true,
             },
             orderBy: {
                 createDate: 'desc',
@@ -292,7 +276,6 @@ class ProductRepository extends BaseRepository {
                 percentDiscountTop: true,
                 //{"color":"[red,green,blue]","size":"[M,L,XL]"}
                 shopId: true,
-                activeByShop: true,
             },
             take: 12,
         });
@@ -304,7 +287,6 @@ class ProductRepository extends BaseRepository {
                     in: productIds,
                 },
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -324,7 +306,6 @@ class ProductRepository extends BaseRepository {
             by: ['productId'],
             where: {
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -344,7 +325,6 @@ class ProductRepository extends BaseRepository {
                     in: productIds,
                 },
                 active: true,
-                activeByShop: true,
             },
             select: {
                 id: true,
@@ -355,7 +335,6 @@ class ProductRepository extends BaseRepository {
                 percentDiscountTop: true,
                 //{"color":"[red,green,blue]","size":"[M,L,XL]"}
                 shopId: true,
-                activeByShop: true,
             },
         });
 
@@ -369,7 +348,7 @@ class ProductRepository extends BaseRepository {
                 where: {
                     discountId: req.body.discount.id,
                     active: true,
-                    activeByShop: true,
+
                 },
             });
             if (productDetail_discount.length > 0) {
@@ -382,7 +361,6 @@ class ProductRepository extends BaseRepository {
                 shopId: shopId,
                 ...(listProductId.length > 0 ? { id: { in: listProductId } } : {}),
                 active: true,
-                activeByShop: true,
             },
             select: {
                 id: true,
@@ -392,7 +370,6 @@ class ProductRepository extends BaseRepository {
                 percentDiscountTop: true,
                 userFavoriteIdList: true,
                 shopId: true,
-                activeByShop: true,
             },
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { take: parseInt(take) }),
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { skip: (step - 1) * take }),
@@ -406,7 +383,6 @@ class ProductRepository extends BaseRepository {
                     in: productIds,
                 },
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
@@ -422,8 +398,13 @@ class ProductRepository extends BaseRepository {
         return res;
     }
     async findNewProducts(take, step, req) {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 60);
+        const time = new Date();
+        time.setDate(time.getDate() - 60);
+        const jibbitCate = await CategoryRepository.db.findFirst({
+            where: {
+                name: 'Jibbitz',
+            },
+        });
 
         const orderByCondition =
             req.body.options.sort === 'bestSelling'
@@ -440,9 +421,11 @@ class ProductRepository extends BaseRepository {
             where: {
                 active: true,
                 createDate: {
-                    gte: oneWeekAgo,
+                    gte: time,
                 },
-
+                categoryId: {
+                    not: jibbitCate.id,
+                },
             },
             select: {
                 id: true,
@@ -454,7 +437,7 @@ class ProductRepository extends BaseRepository {
             },
             take: parseInt(take),
             skip: (step - 1) * take,
-            orderBy: orderByCondition
+            orderBy: orderByCondition,
         });
 
         const productIds = products.map((item) => item.id);
@@ -567,7 +550,7 @@ class ProductRepository extends BaseRepository {
                 ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}),
                 ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
                 ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
-                ...(req.body.options.sort === "discount" ? { virtualPrice: { not: null } } : {}),
+                ...(req.body.options.sort === 'discount' ? { virtualPrice: { not: null } } : {}),
             },
             select: {
                 id: true,
@@ -620,7 +603,6 @@ class ProductRepository extends BaseRepository {
                     in: listProductId,
                 },
                 active: true,
-                activeByShop: true,
             },
 
             select: {
@@ -639,7 +621,6 @@ class ProductRepository extends BaseRepository {
                 percentDiscountTop: true,
                 userFavoriteIdList: true,
                 shopId: true,
-                activeByShop: true,
             },
         });
         //number sold
@@ -650,7 +631,6 @@ class ProductRepository extends BaseRepository {
                     in: listProductId,
                 },
                 active: true,
-                activeByShop: true,
             },
             _sum: {
                 numberSold: true,
