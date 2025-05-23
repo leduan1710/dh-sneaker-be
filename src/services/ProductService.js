@@ -1,3 +1,4 @@
+import CategoryRepository from '../repositories/CategoryRepository.js';
 import ColorRepository from '../repositories/ColorRepository.js';
 import ProductRepository from '../repositories/ProductRepository.js';
 import StylesRepository from '../repositories/StylesRepository.js';
@@ -31,6 +32,19 @@ class ProductService {
                     });
                     return productDiscounts;
                 }
+            } else {
+                return 'Fail';
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+     async findRelatedProductByCategory(categoryId, take, step) {
+        try {
+            const products = await ProductRepository.findRelatedProductByCategory(categoryId, take, step);
+            if (products) {
+                return products;
             } else {
                 return 'Fail';
             }
@@ -100,7 +114,7 @@ class ProductService {
             if (!product) {
                 return 'Product not found';
             }
-
+            const category = await CategoryRepository.find(product.categoryId);
             const type = await TypeRepository.find(product.typeId);
 
             const color = await ColorRepository.find(product.colorId);
@@ -109,6 +123,7 @@ class ProductService {
 
             return {
                 ...product,
+                categoryName: category ? category.name : null,
                 typeName: type ? type.name : null,
                 colorName: color ? color.name : null,
                 colorCode: color ? color.colorCode : null,

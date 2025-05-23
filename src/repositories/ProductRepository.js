@@ -136,7 +136,7 @@ class ProductRepository extends BaseRepository {
                 },
                 active: true,
             },
-            select:{
+            select: {
                 id: true,
                 sellPrice: true,
                 image: true,
@@ -348,7 +348,6 @@ class ProductRepository extends BaseRepository {
                 where: {
                     discountId: req.body.discount.id,
                     active: true,
-
                 },
             });
             if (productDetail_discount.length > 0) {
@@ -500,6 +499,50 @@ class ProductRepository extends BaseRepository {
                     in: productIds,
                 },
                 ...(req.body.options.sizeIds ? { sizeId: { in: req.body.options.sizeIds } } : {}),
+                active: true,
+            },
+            _sum: {
+                numberSold: true,
+            },
+            orderBy: {
+                _sum: {
+                    numberSold: 'desc',
+                },
+            },
+        });
+        const filteredProducts = products.filter((product) =>
+            groupedProductDetails.some((detail) => detail.productId === product.id),
+        );
+        const res = await this.getSold(filteredProducts, groupedProductDetails);
+        return res;
+    }
+    async findRelatedProductByCategory(categoryId, take, step) {
+        //product
+        const products = await this.db.findMany({
+            where: {
+                categoryId: categoryId,
+                active: true,
+            },
+
+            select: {
+                id: true,
+                name: true,
+                sellPrice: true,
+                virtualPrice: true,
+                image: true,
+                colorId: true,
+            },
+            take: parseInt(take),
+            skip: (step - 1) * take,
+        });
+        const productIds = products.map((item) => item.id);
+        //number sold
+        const groupedProductDetails = await this.dbProductDetail.groupBy({
+            by: ['productId'],
+            where: {
+                productId: {
+                    in: productIds,
+                },
                 active: true,
             },
             _sum: {

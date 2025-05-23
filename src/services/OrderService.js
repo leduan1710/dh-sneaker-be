@@ -317,33 +317,72 @@ class OrderService {
         try {
             const order = await OrderRepository.find(orderId);
             const user = await UserRepository.find(order.userId);
-            const updatedOrder = await OrderRepository.update(orderId, {
-                status: 'CANCEL',
-                updateDate: new Date(),
-                commission: 0,
-                orderDescribe: cancelReason,
+            const orderDetails = await OrderDetailRepository.db.findMany({
+                where: {
+                    orderId: order.id,
+                },
             });
 
-            if (updatedOrder) {
-                const notification = await NotificationRepository.db.create({
-                    data: {
-                        describe: `Đơn hàng đã bị từ chối, mã đơn ${updatedOrder.id}`,
-                        image: 'CancelOrder',
-                        link: `/orders/cancel`,
-                        userId: user.id,
-                    },
+            const commission =
+                order.CODPrice -
+                order.shipFee -
+                orderDetails.reduce((total, detail) => {
+                    return total + detail.ctvPrice * detail.quantity;
+                }, 0);
+            const isSuccessOrder = order.status === 'SUCCESS';
+            if (order) {
+                const updatedOrder = await OrderRepository.update(orderId, {
+                    status: 'CANCEL',
+                    updateDate: new Date(),
+                    commission: 0,
+                    orderDescribe: cancelReason,
                 });
-                if (notification) {
-                    await UserRepository.update(user.id, {
-                        notificationIdList: [...user.notificationIdList, notification.id],
+
+                if (updatedOrder) {
+                    if (isSuccessOrder) {
+                        const month = updatedOrder.createDate.getMonth() + 1;
+                        const year = updatedOrder.createDate.getFullYear();
+
+                        let commissionRecord = await CommissionRepository.db.findFirst({
+                            where: {
+                                userId: order.userId,
+                                month: month,
+                                year: year,
+                            },
+                        });
+
+                        if (commissionRecord)  {
+                            commissionRecord = await CommissionRepository.db.update({
+                                where: {
+                                    id: commissionRecord.id,
+                                },
+                                data: {
+                                    commission: commissionRecord.commission - commission,
+                                    total: commissionRecord.total - commission,
+                                },
+                            });
+                        }
+                    }
+                    const notification = await NotificationRepository.db.create({
+                        data: {
+                            describe: `Đơn hàng đã bị hủy, mã đơn ${updatedOrder.id}`,
+                            image: 'CancelOrder',
+                            link: `/orders/cancel`,
+                            userId: user.id,
+                        },
                     });
-                    ReqNotification(user.id);
-                    return updatedOrder;
+                    if (notification) {
+                        await UserRepository.update(user.id, {
+                            notificationIdList: [...user.notificationIdList, notification.id],
+                        });
+                        ReqNotification(user.id);
+                        return updatedOrder;
+                    } else {
+                        return 'Fail';
+                    }
                 } else {
                     return 'Fail';
                 }
-            } else {
-                return 'Fail';
             }
         } catch (e) {
             console.error(e.message);
