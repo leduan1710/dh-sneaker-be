@@ -1,6 +1,15 @@
 import CommissionRepository from '../repositories/CommissionRepository.js';
 
 class CommissionService {
+    async saveCommission(commission) {
+        try {
+            const newCommission = await CommissionRepository.saveNoReq(commission);
+            return newCommission;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
     async getCommissionByMonthAndYear(month, year) {
         try {
             const commissions = await CommissionRepository.findByMonthAndYear(month, year);

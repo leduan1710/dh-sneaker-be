@@ -15,22 +15,28 @@ import SizeService from '../../../services/SizeService.js';
 import axios from 'axios';
 import AdminService from '../../../services/admin/AdminService.js';
 import ProductRepository from '../../../repositories/ProductRepository.js';
+import ColorService from '../../../services/ColorService.js';
+import TypeService from '../../../services/TypeService.js';
+import StyleService from '../../../services/StyleService.js';
 
 class AdminController {
     initRoutes(app) {
         app.post('/admin/add/category', isAuth, this.addCategory);
         app.get('/admin/get/categories', isAuth, this.findAllCategories);
         app.get('/admin/get/products', this.findAllProducts);
-
-        app.get('/admin/get/tokenVTP', isAuth, this.getVTPToken);
-        app.post('/admin/createVTPOrder', isAuth, this.createVTPOrder);
-        app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
-
         app.post('/admin/add/product', isAuth, this.addProduct);
         app.post('/admin/edit/product', isAuth, this.editProduct);
         app.get('/admin/disable-product/:productId', isAuth, this.disableProduct);
         app.get('/admin/enable-product/:productId', isAuth, this.enableProduct);
+
+        app.get('/admin/get/tokenVTP', isAuth, this.getVTPToken);
+        app.post('/admin/createVTPOrder', isAuth, this.createVTPOrder);
+
         app.post('/admin/add/size', isAuth, this.addSize);
+        app.post('/admin/add/color', isAuth, this.addColor);
+
+        app.post('/admin/add/type', isAuth, this.addType);
+        app.post('/admin/add/style', isAuth, this.addStyle);
 
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
         app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
@@ -38,11 +44,12 @@ class AdminController {
         app.get('/admin/get-orders-this-month', isAuth, this.findAllOrderThisMonth);
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
-        app.get('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
+        app.post('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
         app.get('/admin/update/order-success/:orderId', isAuth, this.succeedOrder);
         app.get('/admin/update/order-boom/:orderId', isAuth, this.boomedOrder);
         app.post('/admin/update/order-cancelled/:orderId', isAuth, this.cancelledOrder);
 
+        app.post('/admin/update/commission-note', isAuth, this.commissionNote);
         app.get('/admin/get/commission-by-month-year/:month/:year', isAuth, this.commissionStatistic);
         app.get('/admin/commission-paid-confirm/:commissionId', isAuth, this.confirmCommissionIsPaid);
 
@@ -52,12 +59,13 @@ class AdminController {
         app.get('/admin/unban-user/:userId', isAuth, this.unBanUser);
         app.get('/admin/confirm-user/:userId', isAuth, this.confirmCTV);
 
+        app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
+
         app.get('/admin/get/order-count/:month/:year', isAuth, this.getOrderCountsByMonth);
         app.get('/admin/get/revenue-commission/:month/:year', isAuth, this.getRevenueAndCommissionByMonth);
         app.get('/admin/get/annual-revenue/:year', isAuth, this.getAnnualRevenue);
 
         app.post('/admin/search/order-by-phone-or-delivering-code', isAuth, this.findOrderByPhoneOrDeliveringCode);
-
         app.post('/admin/search/product-by-name', isAuth, this.findProductByName);
         app.post('/admin/register-sub-admin', isAuth, this.registerSubAdmin);
     }
@@ -315,6 +323,52 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
+
+    async addColor(req, res) {
+        try {
+            const colorName = req.body.otherColorName;
+            const categoryId = req.body.categoryIdSelect;
+            const color = await ColorService.addColor(colorName, categoryId);
+            if (color === 'Fail') {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success', color });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    async addType(req, res) {
+        try {
+            const typeName = req.body.otherTypeName;
+            const categoryId = req.body.categoryIdSelect;
+            const type = await TypeService.addType(typeName, categoryId);
+            if (type === 'Fail') {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success', type });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    async addStyle(req, res) {
+        try {
+            const styleName = req.body.otherStyleName;
+            const categoryId = req.body.categoryIdSelect;
+            const style = await StyleService.addStyle(styleName, categoryId);
+            if (style === 'Fail') {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success', style });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
     async findAllCategories(req, res) {
         try {
             const categories = await CategoryService.getAllCategories();
@@ -335,7 +389,6 @@ class AdminController {
                 USERNAME: process.env.VTP_USERNAME,
                 PASSWORD: process.env.VTP_PASSWORD,
             });
-            console.log(response.data.data);
             const token = response.data.data.token;
             const expired = response.data.data.expired;
 
@@ -351,14 +404,20 @@ class AdminController {
     }
 
     async createVTPOrder(req, res) {
-        const token = req.body.VTPToken;
-        const orderId = req.body.orderId;
-        const result = await OrderService.createOrder(orderId, token);
+        try {
+            const token = req.body.VTPToken;
+            const orderId = req.body.orderId;
+            const orderNote = req.body.orderNote;
+            const result = await OrderService.createOrder(orderId, token, orderNote);
 
-        if (result.success) {
-            return res.status(httpStatus.OK).json({ message: 'Success', data: result.data });
-        } else {
-            return res.status(httpStatus.OK).json({ message: 'Fail', error: result.error });
+            if (result.success) {
+                return res.status(httpStatus.OK).json({ message: 'Success', data: result.data });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail', error: result.error });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
 
@@ -501,7 +560,8 @@ class AdminController {
     async confirmedOrder(req, res) {
         try {
             const orderId = req.params.orderId;
-            const order = await OrderService.confirmedOrder(orderId);
+            const orderNote = req.body.orderNote;
+            const order = await OrderService.confirmedOrder(orderId, orderNote);
             if (order != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', order });
             } else {
@@ -592,7 +652,19 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
-
+    async commissionNote(req, res) {
+        try {
+            const commission = req.body.commission;
+            const newCommission = await CommissionService.saveCommission(commission);
+            if (newCommission != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', newCommission });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
     async confirmCommissionIsPaid(req, res) {
         try {
             const commissionId = req.params.commissionId;

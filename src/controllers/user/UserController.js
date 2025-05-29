@@ -4,7 +4,11 @@ import md5 from 'md5';
 import { isAuth } from '../../middleware/auth.middleware.js';
 import UserService from '../../services/ctv/UserService.js';
 import UserRepository from '../../repositories/UserRepository.js';
-import { publicUploadFile, publicUploadFileTemporary } from '../../middleware/upload.middleware.js';
+import {
+    publicUploadFile,
+    publicUploadFileTemporary,
+    publicUploadMultiFile,
+} from '../../middleware/upload.middleware.js';
 import NotificationRepository from '../../repositories/NotificationRepository.js';
 import OrderService from '../../services/OrderService.js';
 import OrderDetailService from '../../services/OrderDetailService.js';
@@ -21,14 +25,29 @@ class UserController {
         app.post('/user/change-password-2fa', isAuth, this.changePassword_2fa);
         app.post('/user/handle-order', isAuth, this.handleOrder);
         app.post('/user/edit-order', isAuth, this.editOrder);
+        app.get('/user/cancel-order/:orderId', isAuth, this.cancelProcessingOrder);
 
         app.get('/user/get-notification', isAuth, this.getNotificationByUser);
         app.get('/user/read-notification/:notificationId', isAuth, this.handleReadNotification);
         app.get('/user/get-orders-by-ctv/:userId/:month/:year', isAuth, this.findAllOrderByCTV);
         app.post('/user/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
         app.get('/user/get/orderDetail/:orderId', isAuth, this.findOrderDetail);
-
+        app.get('/user/get/ctvList', isAuth, this.getCTVList);
     }
+    async getCTVList(req, res) {
+        try {
+            const ctvList = await UserService.getCTVList();
+            if (ctvList) {
+                return res.status(httpStatus.OK).json({ message: 'Success', ctvList });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
     async changePassword(req, res) {
         try {
             const resChangePassword = await UserService.changePassword(req);
@@ -145,42 +164,22 @@ class UserController {
             if (user == 'Fail') {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
             }
-            // if (user.role == 'CTV') {
-            //     const activeShop = await ShopRepository.find(user.shopId, {
-            //         select: {
-            //             active: true,
-            //         },
-            //     });
-            //     user.activeShop = activeShop;
-            //     return res.status(httpStatus.OK).json({ message: 'Success', user });
-            // }
             return res.status(httpStatus.OK).json({ message: 'Success', user });
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
-    // async handleOrder(req, res) {
-    //     try {
-    //         const orders = await UserService.handleOrder(req);
-    //         if (orders != 'Fail') {
-    //             return res.status(httpStatus.OK).json({ message: 'Success', orders });
-    //         } else {
-    //             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
-    //         }
-    //     } catch {
-    //         return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
-    //     }
-    // }
+
     async handleOrder(req, res) {
         try {
-            publicUploadFile(req, res, async function (err) {
+            publicUploadMultiFile(req, res, async function (err) {
                 if (err) {
                     return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
                 }
 
-                if (req.file) {
-                    req.body.noteImage = req.file.path.slice(req.file.path.indexOf('uploads'));
+                if (req.files) {
+                    req.body.noteImageList = req.files.map((file) => file.path.slice(file.path.indexOf('uploads')));
                 }
 
                 const {
@@ -210,7 +209,7 @@ class UserController {
                     CODPrice: parseFloat(CODPrice),
                     shipFee: parseFloat(shipFee),
                     listOrderDetail: JSON.parse(listOrderDetail),
-                    noteImage: req.body.noteImage ? req.body.noteImage : null,
+                    noteImageList: req.body.noteImageList ? req.body.noteImageList : [],
                 });
                 if (orders != 'Fail') {
                     return res.status(httpStatus.OK).json({ message: 'Success', orders });
@@ -225,55 +224,46 @@ class UserController {
     }
     async editOrder(req, res) {
         try {
-            publicUploadFile(req, res, async function (err) {
+            publicUploadMultiFile(req, res, async function (err) {
                 if (err) {
                     return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
                 }
 
-                if (req.file) {
-                    req.body.noteImage = req.file.path.slice(req.file.path.indexOf('uploads'));
+                if (req.body.oldNoteImageList) {
+                    req.body.oldNoteImageList = JSON.parse(req.body.oldNoteImageList);
+                } else {
+                    req.body.oldNoteImageList = [];
                 }
-
-                const {
-                    id,
-                    userId,
-                    ctvName,
-                    ctvNote,
-                    customerName,
-                    customerPhone,
-                    addressDetail,
-                    address,
-                    shipMethod,
-                    paid,
-                    CODPrice,
-                    shipFee,
-                } = req.body;
+                const newImagePaths = req.files.map((file) => file.path.slice(file.path.indexOf('uploads')));
+                req.body.noteImageList = [...req.body.oldNoteImageList, ...newImagePaths];
                 req.body.address = req.body.address ? JSON.parse(req.body.address) : null;
                 req.body.paid = req.paid === 'true';
-                req.body.CODPrice = parseFloat(req.body.CODPrice)
-                req.body.shipFee = parseFloat(req.body.shipFee)
+                req.body.CODPrice = parseFloat(req.body.CODPrice);
+                req.body.shipFee = parseFloat(req.body.shipFee);
 
-                const order = await OrderService.saveOrder(req)
-                // const orders = await UserService.handleOrder({
-                //     userId,
-                //     ctvName,
-                //     ctvNote,
-                //     customerName,
-                //     customerPhone,
-                //     addressDetail,
-                //     address: address ? JSON.parse(address) : null,
-                //     shipMethod,
-                //     paid: paid === 'true',
-                //     CODPrice: parseFloat(CODPrice),
-                //     shipFee: parseFloat(shipFee),
-                //     noteImage: req.body.noteImage ? req.body.noteImage : null,
-                // });
+                const order = await OrderService.saveOrder(req);
+
                 if (order != 'Fail') {
                     return res.status(httpStatus.OK).json({ message: 'Success', order });
                 } else {
                     return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
                 }
             });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+    async cancelProcessingOrder(req, res) {
+        try {
+            const orderId = req.params.orderId;
+            const userId = req.user.id;
+            const orderRes = await OrderService.cancelProcessingOrder(orderId, userId);
+            if (orderRes != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
         } catch (error) {
             console.error(error);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });

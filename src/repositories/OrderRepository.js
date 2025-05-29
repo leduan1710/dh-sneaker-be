@@ -20,7 +20,7 @@ class OrderRepository extends BaseRepository {
             ctvNote: true,
             shipMethod: true,
             orderCode: true,
-            noteImage: true,
+            noteImageList: true,
             commission: true,
             customerName: true,
             customerPhone: true,
@@ -31,6 +31,7 @@ class OrderRepository extends BaseRepository {
             updateDate: true,
             createDate: true,
             deliveryCode: true,
+            adminNote: true,
         };
     }
 

@@ -212,7 +212,8 @@ model Orders {
   updateDate DateTime @default(now())
   ctvName String?
   ctvNote String?
-  noteImage String?
+  adminNote String?
+  noteImageList String[] @default([])
   customerName String?
   customerPhone String?
   address Json?
@@ -254,6 +255,7 @@ model Commission {
   commission Float?
   bonus Float? @default(0)
   total Float?
+  note String?
   isPaid Boolean @default(false)
   month Int
   year Int

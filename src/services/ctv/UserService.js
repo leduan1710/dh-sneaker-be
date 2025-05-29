@@ -152,6 +152,25 @@ class UserService {
             return 'Fail';
         }
     }
+    async getCTVList() {
+        try {
+            const users = await UserRepository.db.findMany({
+                where: {
+                    role: 'CTV',
+                },
+                select: {
+                    name: true,
+                    id: true,
+                },
+            });
+            if (users) {
+                return users;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
 
     async updateUserInfo(req) {
         try {
@@ -194,13 +213,8 @@ class UserService {
         try {
             const { listOrderDetail, ...order } = orderData;
 
-            const [user, jibbitCate, admin] = await Promise.all([
+            const [user, admin] = await Promise.all([
                 UserRepository.find(order.userId),
-                CategoryRepository.db.findFirst({
-                    where: {
-                        name: 'Jibbitz',
-                    },
-                }),
                 UserRepository.db.findFirst({
                     where: {
                         role: 'ADMIN',

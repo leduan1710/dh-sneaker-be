@@ -24,6 +24,8 @@ class GuestController {
         app.get('/api/all-color', this.findAllColor);
         app.get('/api/all-type', this.findAllType);
         app.get('/api/size-by-category/:categoryId', this.findSizesByCategory);
+        app.get('/api/style-by-category/:categoryId', this.findStylesByCategory);
+        app.get('/api/color-by-category/:categoryId', this.findColorsByCategory);
         app.get('/api/type-by-category/:categoryId', this.findTypesByCategory);
         app.get('/api/type-by-category-name/:categoryName', this.findTypesByCategoryName);
 
@@ -62,6 +64,7 @@ class GuestController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findCategoryById(req, res) {
         try {
             const categoryId = req.params.categoryId;
@@ -76,6 +79,7 @@ class GuestController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findAllProducts(req, res) {
         try {
             const products = await ProductService.getAllProducts();
@@ -89,6 +93,7 @@ class GuestController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findProductById(req, res) {
         try {
             const productId = req.params.productId;
@@ -103,6 +108,7 @@ class GuestController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findProductDetailByProductId(req, res) {
         try {
             const productId = req.params.productId;
@@ -116,6 +122,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findProductDetailMany(req, res) {
         try {
             const resProductDetail = await ProductDetailService.findProductDetailMany(req);
@@ -128,6 +135,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findAllSize(req, res) {
         try {
             const sizes = await SizeRepository.findAll();
@@ -136,6 +144,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findAllStyle(req, res) {
         try {
             const styles = await StylesRepository.findAll();
@@ -144,6 +153,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findAllColor(req, res) {
         try {
             const colors = await ColorRepository.findAll();
@@ -153,6 +163,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findAllType(req, res) {
         try {
             const types = await TypeRepository.findAll();
@@ -161,6 +172,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findSizesByCategory(req, res) {
         try {
             const categoryId = req.params.categoryId;
@@ -172,6 +184,7 @@ class GuestController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async findTypesByCategory(req, res) {
         try {
             const categoryId = req.params.categoryId;
@@ -182,6 +195,38 @@ class GuestController {
                 },
             });
             if (types) return res.status(httpStatus.OK).json({ message: 'Success', types });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
+    async findStylesByCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+
+            const styles = await StylesRepository.db.findMany({
+                where: {
+                    categoryId: categoryId,
+                },
+            });
+            if (styles) return res.status(httpStatus.OK).json({ message: 'Success', styles });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+
+    async findColorsByCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+
+            const colors = await ColorRepository.db.findMany({
+                where: {
+                    categoryId: categoryId,
+                },
+            });
+            if (colors) return res.status(httpStatus.OK).json({ message: 'Success', colors });
             else return res.status(httpStatus.OK).json({ message: 'Success' });
         } catch {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });

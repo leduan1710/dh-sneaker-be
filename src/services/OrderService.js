@@ -113,7 +113,7 @@ class OrderService {
         }
     }
 
-    async confirmedOrder(orderId) {
+    async confirmedOrder(orderId, orderNote) {
         try {
             const order = await OrderRepository.find(orderId);
             const orderDetails = await OrderDetailRepository.db.findMany({
@@ -134,6 +134,7 @@ class OrderService {
                     status: 'SUCCESS',
                     updateDate: new Date(),
                     commission: commission,
+                    adminNote: orderNote ? orderNote : null
                 });
 
                 if (updatedOrder) {
@@ -351,7 +352,7 @@ class OrderService {
                             },
                         });
 
-                        if (commissionRecord)  {
+                        if (commissionRecord) {
                             commissionRecord = await CommissionRepository.db.update({
                                 where: {
                                     id: commissionRecord.id,
@@ -389,7 +390,7 @@ class OrderService {
             return 'Fail';
         }
     }
-    async createOrder(orderId, token) {
+    async createOrder(orderId, token, orderNote) {
         try {
             const order = await OrderRepository.find(orderId);
             const orderDetails = await OrderDetailRepository.db.findMany({
@@ -409,7 +410,14 @@ class OrderService {
                     SENDER_FULLNAME: 'Duẫn Test',
                     SENDER_PHONE: '0773450028',
                     RECEIVER_FULLNAME: order.customerName,
-                    RECEIVER_ADDRESS: order.addressDetail,
+                    RECEIVER_ADDRESS:
+                        order.addressDetail +
+                        ', ' +
+                        order.address.ward.WARDS_NAME +
+                        ', ' +
+                        order.address.district.DISTRICT_NAME +
+                        ', ' +
+                        order.address.province.PROVINCE_NAME,
                     RECEIVER_PHONE: order.customerPhone,
                     PRODUCT_NAME: 'giày dép',
                     PRODUCT_QUANTITY: 1,
@@ -438,6 +446,7 @@ class OrderService {
                             status: 'SUCCESS',
                             commission: commission,
                             deliveryCode: response.data.data.ORDER_NUMBER,
+                            adminNote: orderNote ? orderNote : null
                         },
                     });
                     if (updatedOrder) {
@@ -484,7 +493,33 @@ class OrderService {
             return { success: false };
         }
     }
+    async cancelProcessingOrder(orderId, userId) {
+        try {
+            const user = await UserRepository.find(userId);
+            if (user) {
+                user.orderIdList = user.orderIdList.filter((id) => id !== orderId);
+                await UserRepository.db.update({
+                    where: { id: user.id },
+                    data: { orderIdList: user.orderIdList },
+                });
+            }
+            await OrderDetailRepository.db.deleteMany({
+                where: {
+                    orderId: orderId,
+                },
+            });
+            await OrderRepository.db.delete({
+                where: {
+                    id: orderId,
+                },
+            });
 
+            return 'Success';
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
     async getAnnualRevenue(year) {
         try {
             const revenue = await OrderRepository.getAnnualRevenue(year);
