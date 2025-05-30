@@ -94,13 +94,34 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllOrderThisMonth() {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
+    async getOrderCount() {
+        const count = await this.db.count({
+            where: {
+                status: {
+                    not: 'PROCESSING',
+                },
+            },
+        });
+        return count;
+    }
 
-        const endOfMonth = new Date();
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
+    async getOrderCountInMonth(month, year) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
+        const count = await this.db.count({
+            where: {
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+        });
+        return count;
+    }
+
+    async findAllOrderByMonth(month, year, take, step) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
 
         const orders = await this.db.findMany({
             where: {
@@ -109,6 +130,8 @@ class OrderRepository extends BaseRepository {
                     lte: endOfMonth,
                 },
             },
+            take: parseInt(take),
+            skip: (step - 1) * take,
             orderBy: {
                 createDate: 'desc',
             },
@@ -117,13 +140,9 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllOrderByCTVName(ctvName) {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-
-        const endOfMonth = new Date();
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
+    async findAllOrderByCTVName(ctvName, month, year) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0);
 
         const orders = await this.db.findMany({
             where: {

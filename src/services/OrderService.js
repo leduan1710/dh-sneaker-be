@@ -37,16 +37,20 @@ class OrderService {
     async getAllOrderByStep(take, step) {
         try {
             const orders = await OrderRepository.findAllOrderByStep(take, step);
-            return orders;
+            const count = await OrderRepository.getOrderCount();
+            return {
+                orders: orders,
+                count: count,
+            };
         } catch (e) {
             console.log(e.message);
             return 'Fail';
         }
     }
 
-    async getAllOrderByCTVName(ctvName) {
+    async getAllOrderByCTVName(ctvName, month, year) {
         try {
-            const orders = await OrderRepository.findAllOrderByCTVName(ctvName);
+            const orders = await OrderRepository.findAllOrderByCTVName(ctvName, month, year);
             return orders;
         } catch (e) {
             console.log(e.message);
@@ -73,10 +77,14 @@ class OrderService {
         }
     }
 
-    async getAllOrderThisMonth() {
+    async getAllOrderByMonth(month, year, take, step) {
         try {
-            const orders = await OrderRepository.findAllOrderThisMonth();
-            return orders;
+            const orders = await OrderRepository.findAllOrderByMonth(month, year, take, step);
+            const count = await OrderRepository.getOrderCountInMonth(month, year);
+            return {
+                orders: orders,
+                count: count,
+            };
         } catch (e) {
             console.log(e.message);
             return 'Fail';

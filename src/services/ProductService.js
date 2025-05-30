@@ -40,7 +40,7 @@ class ProductService {
             return 'Fail';
         }
     }
-     async findRelatedProductByCategory(categoryId, take, step) {
+    async findRelatedProductByCategory(categoryId, take, step) {
         try {
             const products = await ProductRepository.findRelatedProductByCategory(categoryId, take, step);
             if (products) {
@@ -107,7 +107,7 @@ class ProductService {
             return 'Fail';
         }
     }
-    
+
     async getProductById(productId) {
         try {
             const product = await ProductRepository.find(productId);
@@ -128,6 +128,20 @@ class ProductService {
                 colorName: color ? color.name : null,
                 colorCode: color ? color.colorCode : null,
                 styleNames: styles.map((style) => (style ? style.name : null)),
+            };
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+    async getAllProductByStep(take, step) {
+        try {
+            const products = await ProductRepository.findAllProductByStep(take, step);
+            const count = await ProductRepository.getProductCount();
+            return {
+                message: 'Success',
+                products: products,
+                count: count,
             };
         } catch (e) {
             console.log(e.message);

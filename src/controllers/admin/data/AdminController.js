@@ -23,7 +23,7 @@ class AdminController {
     initRoutes(app) {
         app.post('/admin/add/category', isAuth, this.addCategory);
         app.get('/admin/get/categories', isAuth, this.findAllCategories);
-        app.get('/admin/get/products', this.findAllProducts);
+        app.get('/admin/get/products/:take/:step', this.findAllProducts);
         app.post('/admin/add/product', isAuth, this.addProduct);
         app.post('/admin/edit/product', isAuth, this.editProduct);
         app.get('/admin/disable-product/:productId', isAuth, this.disableProduct);
@@ -40,8 +40,8 @@ class AdminController {
 
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
         app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
-        app.get('/admin/get-orders-by-ctv/:ctvName', isAuth, this.findAllOrderByCTVName);
-        app.get('/admin/get-orders-this-month', isAuth, this.findAllOrderThisMonth);
+        app.get('/admin/get-orders-by-ctv/:ctvName/:month/:year', isAuth, this.findAllOrderByCTVName);
+        app.get('/admin/get-orders-by-month/:month/:year/:take/:step', isAuth, this.findAllOrderByMonth);
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.post('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
@@ -140,8 +140,10 @@ class AdminController {
     }
     async findAllProducts(req, res) {
         try {
-            const products = await ProductService.getAllProducts();
-            if (products) {
+            const take = req.params.take;
+            const step = req.params.step;
+            const products = await ProductService.getAllProductByStep(take, step);
+            if (products !== 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', products });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
@@ -456,7 +458,7 @@ class AdminController {
             const take = req.params.take;
             const step = req.params.step;
             const orders = await OrderService.getAllOrderByStep(take, step);
-            if (orders) {
+            if (orders != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
@@ -470,7 +472,10 @@ class AdminController {
     async findAllOrderByCTVName(req, res) {
         try {
             const ctvName = req.params.ctvName;
-            const orders = await OrderService.getAllOrderByCTVName(ctvName);
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+
+            const orders = await OrderService.getAllOrderByCTVName(ctvName, month, year);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -482,10 +487,14 @@ class AdminController {
         }
     }
 
-    async findAllOrderThisMonth(req, res) {
+    async findAllOrderByMonth(req, res) {
         try {
-            const orders = await OrderService.getAllOrderThisMonth();
-            if (orders) {
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+            const take = req.params.take;
+            const step = req.params.step;
+            const orders = await OrderService.getAllOrderByMonth(month, year, take, step);
+            if (orders !== 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });

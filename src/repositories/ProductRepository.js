@@ -638,7 +638,21 @@ class ProductRepository extends BaseRepository {
         return res;
     }
 
-    async findProductByListId(req) {
+    async findAllProductByStep(take, step) {
+        const products = await this.db.findMany({
+            take: parseInt(take),
+            skip: (step - 1) * take,
+        });
+        return products;
+    }
+
+    async getProductCount()
+    {
+        const total = await this.db.count()
+        return total;
+    }
+
+    async findProductsByListId(req) {
         const listProductId = req.body.listProductId;
         const products = await this.db.findMany({
             where: {
