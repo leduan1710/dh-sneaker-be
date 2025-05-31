@@ -357,7 +357,7 @@ class AdminController {
             });
             const token = response.data.data.token;
             const expired = response.data.data.expired;
-
+            
             if (token && expired) {
                 return res.status(httpStatus.OK).json({ message: 'Success', token, expired });
             } else {

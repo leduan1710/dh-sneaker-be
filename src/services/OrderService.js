@@ -414,8 +414,8 @@ class OrderService {
                 }, 0);
             if (order) {
                 const orderData = {
-                    GROUPADDRESS_ID: 22988657,
-                    SENDER_FULLNAME: 'Duẫn Test',
+                    GROUPADDRESS_ID: 20236399,
+                    SENDER_FULLNAME: 'Shop Giày / Crocs',
                     SENDER_PHONE: '0773450028',
                     RECEIVER_FULLNAME: order.customerName,
                     RECEIVER_ADDRESS:
@@ -445,6 +445,7 @@ class OrderService {
                         'Content-Type': 'application/json',
                     },
                 });
+                console.log(response.data)
                 if (response.data.message == 'OK') {
                     const updatedOrder = await OrderRepository.db.update({
                         where: {
