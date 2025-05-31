@@ -445,7 +445,6 @@ class OrderService {
                         'Content-Type': 'application/json',
                     },
                 });
-                console.log(response.data)
                 if (response.data.message == 'OK') {
                     const updatedOrder = await OrderRepository.db.update({
                         where: {

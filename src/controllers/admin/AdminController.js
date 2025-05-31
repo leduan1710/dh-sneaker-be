@@ -14,6 +14,9 @@ import UserService from '../../services/ctv/UserService.js';
 import OrderDetailService from '../../services/OrderDetailService.js';
 import CommissionService from '../../services/CommissionService.js';
 import { isAuth } from '../../middleware/auth.middleware.js';
+import AdminService from '../../services/admin/AdminService.js';
+import UserRepository from '../../repositories/UserRepository.js';
+import ColorService from '../../services/ColorService.js';
 
 
 class AdminController {
@@ -181,7 +184,6 @@ class AdminController {
                 }
                 const selectedSizes = JSON.parse(req.body.selectedSizes);
                 const product = resProduct.product;
-                console.log(selectedSizes);
                 const productDetails = selectedSizes.map((size) => ({
                     id: size.productDetailId || undefined,
                     productId: product.id,
@@ -530,6 +532,7 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async confirmedOrder(req, res) {
         try {
             const orderId = req.params.orderId;
@@ -544,6 +547,7 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async succeedOrder(req, res) {
         try {
             const orderId = req.params.orderId;
@@ -557,6 +561,7 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async boomedOrder(req, res) {
         try {
             const orderId = req.params.orderId;
@@ -570,37 +575,12 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+
     async cancelledOrder(req, res) {
         try {
             const orderId = req.params.orderId;
             const cancelReason = req.body.cancelReason;
             const order = await OrderService.cancelledOrder(orderId, cancelReason);
-            if (order != 'Fail') {
-                return res.status(httpStatus.OK).json({ message: 'Success', order });
-            } else {
-                return res.status(httpStatus.OK).json({ message: 'Fail' });
-            }
-        } catch {
-            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
-        }
-    }
-    async deliveringOrder(req, res) {
-        try {
-            const orderId = req.params.orderId;
-            const order = await UpdateDataService.deliverOrder(orderId);
-            if (order != 'Fail') {
-                return res.status(httpStatus.OK).json({ message: 'Success', order });
-            } else {
-                return res.status(httpStatus.OK).json({ message: 'Fail' });
-            }
-        } catch {
-            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
-        }
-    }
-    async deliveredOrder(req, res) {
-        try {
-            const orderId = req.params.orderId;
-            const order = await UpdateDataService.completedOrder(orderId);
             if (order != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', order });
             } else {
@@ -641,7 +621,6 @@ class AdminController {
     async confirmCommissionIsPaid(req, res) {
         try {
             const commissionId = req.params.commissionId;
-            console.log('id: ' + commissionId);
             const commission = await CommissionService.ConfirmCommissionIsPaid(commissionId);
             if (commission != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', commission });
@@ -736,6 +715,7 @@ class AdminController {
                 return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
             }
         } catch (e) {
+            console.log(e.message)
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }

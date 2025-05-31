@@ -307,7 +307,6 @@ class UserController {
             const userId = req.params.userId;
             const month = parseInt(req.params.month);
             const year = parseInt(req.params.year);
-            console.log(userId);
             const orders = await OrderService.getAllOrderByCTV(userId, month, year);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });

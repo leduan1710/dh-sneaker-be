@@ -106,8 +106,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async getOrderCountInMonth(month, year) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
         const count = await this.db.count({
             where: {
                 createDate: {
@@ -120,8 +120,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async findAllOrderByMonth(month, year, take, step) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         const orders = await this.db.findMany({
             where: {
@@ -141,32 +141,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async findAllOrderByCTVName(ctvName, month, year) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
-
-        const orders = await this.db.findMany({
-            where: {
-                ctvName: ctvName,
-                createDate: {
-                    gte: startOfMonth,
-                    lte: endOfMonth,
-                },
-            },
-            orderBy: {
-                createDate: 'desc',
-            },
-            select: this.defaultSelect,
-        });
-        return orders;
-    }
-
-    async findOrderByPhoneOrDeliveringCodeThisMonth(searchTerm) {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-
-        const endOfMonth = new Date();
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         const orders = await this.db.findMany({
             where: {
@@ -185,8 +161,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async findAllOrderByCTV(userId, month, year) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         const orders = await this.db.findMany({
             where: {
@@ -205,8 +181,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async getRevenueAndCommissionByMonth(month, year) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         const result = {
             revenue: 0,
@@ -257,8 +233,8 @@ class OrderRepository extends BaseRepository {
     }
 
     async orderCountByMonth(month, year) {
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0);
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         const orderCounts = {
             SUCCESS: 0,
