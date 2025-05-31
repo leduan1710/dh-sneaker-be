@@ -35,10 +35,6 @@ enum StatusNotification {
   UNREAD
 }
 
-enum StatusAddress {
-  BLOCK
-  ACTIVE
-}
 //USER 
 
 
@@ -51,7 +47,6 @@ model User {
   email String? @unique
   sex Boolean? 
   birthDay DateTime?
-  defaultAddressId String? @default("")
   createDate DateTime @default(now())
   updateDate DateTime @default(now())
   code Int?
@@ -59,28 +54,12 @@ model User {
   refreshToken String?
   status Status @default(PENDING)
   role Role @default(CTV)
-  addressIdList String[] @default([])
   orderIdList String[] @default([])
   active Boolean @default(true)
   notificationIdList String[] @default([])
   orderDetailReportIdList String [] @default([])
 
   @@map("user")
-
-}
-
-model Address {
-  id   String   @id @default(auto()) @map("_id") @db.ObjectId
-  name String
-  phone String
-  city Json
-  district Json
-  ward Json
-  apartment String
-  userId String
-  status StatusAddress @default(ACTIVE)
-
-  @@map("address")
 
 }
 
@@ -144,6 +123,14 @@ model Size{
   categoryId String
 
   @@map("size")
+}
+
+model Announcement {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  content String
+  active Boolean @default(true)
+
+  @@map("announcement")
 }
 
 //PRODUCT

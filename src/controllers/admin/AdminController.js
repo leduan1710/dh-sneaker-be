@@ -1,23 +1,20 @@
 import httpStatus from 'http-status';
-import { isAuth } from '../../../middleware/auth.middleware.js';
-import { publicUploadFile, publicUploadMultiFile } from '../../../middleware/upload.middleware.js';
-import GetDataService from '../../../services/admin/data/GetDataService.js';
-import AuthService from '../../../services/auth/AuthService.js';
-import ProductService from '../../../services/ProductService.js';
-import ProductDetailService from '../../../services/ProductDetailService.js';
-import OrderService from '../../../services/OrderService.js';
-import OrderDetailService from '../../../services/OrderDetailService.js';
-import UserService from '../../../services/ctv/UserService.js';
-import UserRepository from '../../../repositories/UserRepository.js';
-import CategoryService from '../../../services/CategoryService.js';
-import CommissionService from '../../../services/CommissionService.js';
-import SizeService from '../../../services/SizeService.js';
+import AuthService from '../../services/auth/AuthService.js';
+import ProductDetailService from '../../services/ProductDetailService.js';
+import ProductService from '../../services/ProductService.js';
+import { publicUploadFile, publicUploadMultiFile } from '../../middleware/upload.middleware.js';
+import ProductRepository from '../../repositories/ProductRepository.js';
+import SizeService from '../../services/SizeService.js';
+import TypeService from '../../services/TypeService.js';
+import StyleService from '../../services/StyleService.js';
+import CategoryService from '../../services/CategoryService.js';
 import axios from 'axios';
-import AdminService from '../../../services/admin/AdminService.js';
-import ProductRepository from '../../../repositories/ProductRepository.js';
-import ColorService from '../../../services/ColorService.js';
-import TypeService from '../../../services/TypeService.js';
-import StyleService from '../../../services/StyleService.js';
+import OrderService from '../../services/OrderService.js';
+import UserService from '../../services/ctv/UserService.js';
+import OrderDetailService from '../../services/OrderDetailService.js';
+import CommissionService from '../../services/CommissionService.js';
+import { isAuth } from '../../middleware/auth.middleware.js';
+
 
 class AdminController {
     initRoutes(app) {
@@ -250,39 +247,6 @@ class AdminController {
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
-        }
-    }
-
-    async addProductDetail(req, res) {
-        try {
-            publicUploadMultiFile(req, res, async function (err) {
-                if (err) {
-                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'Upload Fail', error: err });
-                }
-
-                if (!req.files || req.files.length === 0) {
-                    return res.status(httpStatus.BAD_REQUEST).json({ message: 'At least one image is required' });
-                }
-
-                req.body.imagesList = req.files.map((file) => file.path.slice(file.path.indexOf('uploads')));
-
-                req.body.sellPrice = Number(req.body.sellPrice);
-                req.body.importPrice = Number(req.body.importPrice);
-                req.body.virtualPrice = Number(req.body.virtualPrice);
-                req.body.ctvPrice = Number(req.body.ctvPrice);
-
-                req.body.quantity = parseInt(req.body.quantity, 10);
-
-                const resProductDetail = await AddDataService.saveProductDetail(req.body);
-                if (resProductDetail.message === 'Fail') {
-                    return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
-                }
-                const producDetail = resProductDetail.producDetail;
-                return res.status(httpStatus.OK).json({ message: 'Success', producDetail });
-            });
-        } catch (error) {
-            console.error(error);
-            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
         }
     }
 
