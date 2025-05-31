@@ -1,7 +1,7 @@
 import BaseRepository from './BaseRepository.js';
 
-class AnnoucementRepository extends BaseRepository {
-    modelName = 'Annoucement';
+class AnnouncementRepository extends BaseRepository {
+    modelName = 'Announcement';
 
     constructor() {
         super();
@@ -9,4 +9,4 @@ class AnnoucementRepository extends BaseRepository {
     }
 }
 
-export default new AnnoucementRepository();
+export default new AnnouncementRepository();

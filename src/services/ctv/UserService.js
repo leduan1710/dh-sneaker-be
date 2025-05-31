@@ -236,15 +236,19 @@ class UserService {
                                 userId: admin.id,
                             },
                         });
-                        Promise.all(subAdmins.map(async (subAdmin) => {
-                            NotificationRepository.db.create({
-                            data: {
-                                describe: `Có đơn hàng mới`,
-                                image: 'NewOrder',
-                                link: `/orders/processing`,
-                                userId: subAdmin.id,
-                            }})
-                        }))
+                        const notificationPromises = subAdmins.map(async (subAdmin) => {
+                            const notification = await NotificationRepository.db.create({
+                                data: {
+                                    describe: `Có đơn hàng mới`,
+                                    image: 'NewOrder',
+                                    link: `/orders/processing`,
+                                    userId: subAdmin.id,
+                                },
+                            });
+                            ReqNotification(subAdmin.id);
+                            return notification;
+                        });
+                        await Promise.all(notificationPromises);
                         if (notification) {
                             await UserRepository.update(admin.id, {
                                 notificationIdList: [...admin.notificationIdList, notification.id],

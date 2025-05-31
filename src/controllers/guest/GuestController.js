@@ -10,6 +10,7 @@ import ColorRepository from '../../repositories/ColorRepository.js';
 import TypeRepository from '../../repositories/TypeRepository.js';
 import SizeService from '../../services/SizeService.js';
 import CategoryRepository from '../../repositories/CategoryRepository.js';
+import AnnouncementService from '../../services/AnnouncementService.js';
 
 class GuestController {
     initRoutes(app) {
@@ -18,6 +19,7 @@ class GuestController {
         app.get('/api/products', this.findAllProducts);
         app.get('/api/product/:productId', this.findProductById);
         app.get('/api/product-detail-by-product/:productId', this.findProductDetailByProductId);
+        app.get('/api/announcements', this.findAllAnnouncements);
         app.post('/api/get-product-detail-many', this.findProductDetailMany);
         app.get('/api/all-size', this.findAllSize);
         app.get('/api/all-style', this.findAllStyle);
@@ -56,6 +58,20 @@ class GuestController {
             const categories = await CategoryService.getAllCategories();
             if (categories) {
                 return res.status(httpStatus.OK).json({ message: 'Success', categories });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllAnnouncements(req, res) {
+        try {
+            const announcements = await AnnouncementService.getAllAnnouncements();
+            if (announcements) {
+                return res.status(httpStatus.OK).json({ message: 'Success', announcements });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }

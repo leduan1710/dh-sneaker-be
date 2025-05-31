@@ -35,6 +35,12 @@ enum StatusNotification {
   UNREAD
 }
 
+enum AnnouncementPosition {
+  LEFT
+  RIGHT
+  CENTER
+}
+
 //USER 
 
 
@@ -129,7 +135,7 @@ model Announcement {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   content String
   active Boolean @default(true)
-
+  position AnnouncementPosition
   @@map("announcement")
 }
 

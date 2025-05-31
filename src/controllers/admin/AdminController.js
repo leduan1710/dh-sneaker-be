@@ -17,7 +17,7 @@ import { isAuth } from '../../middleware/auth.middleware.js';
 import AdminService from '../../services/admin/AdminService.js';
 import UserRepository from '../../repositories/UserRepository.js';
 import ColorService from '../../services/ColorService.js';
-
+import AnnouncementService from '../../services/AnnouncementService.js';
 
 class AdminController {
     initRoutes(app) {
@@ -68,6 +68,9 @@ class AdminController {
         app.post('/admin/search/order-by-phone-or-delivering-code', isAuth, this.findOrderByPhoneOrDeliveringCode);
         app.post('/admin/search/product-by-name', isAuth, this.findProductByName);
         app.post('/admin/register-sub-admin', isAuth, this.registerSubAdmin);
+
+        app.post('/admin/update/announcement', isAuth, this.saveAnnouncement);
+        app.get('/admin/delete/announcement/:announcementId', isAuth, this.deleteAnnouncement);
     }
 
     async registerSubAdmin(req, res) {
@@ -359,7 +362,7 @@ class AdminController {
             });
             const token = response.data.data.token;
             const expired = response.data.data.expired;
-            
+
             if (token && expired) {
                 return res.status(httpStatus.OK).json({ message: 'Success', token, expired });
             } else {
@@ -618,6 +621,33 @@ class AdminController {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
+    async saveAnnouncement(req, res) {
+        try {
+            const announcement = req.body.announcement;
+            const newAnnouncement = await AnnouncementService.saveAnnouncement(announcement);
+            if (newAnnouncement != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', newAnnouncement });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async deleteAnnouncement(req, res) {
+        try {
+            const announcementId = req.params.announcementId;
+            const result = await AnnouncementService.deleteAnnouncement(announcementId);
+            if (result != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch(e) {
+            console.log(e.message)
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
     async confirmCommissionIsPaid(req, res) {
         try {
             const commissionId = req.params.commissionId;
@@ -715,7 +745,7 @@ class AdminController {
                 return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
             }
         } catch (e) {
-            console.log(e.message)
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }
