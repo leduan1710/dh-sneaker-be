@@ -288,7 +288,6 @@ class AdminController {
 
     async addCategory(req, res) {
         try {
-            const name = req.body.name;
             const category = await CategoryService.saveCategory(req.body);
             if (category === 'Fail') {
                 return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });

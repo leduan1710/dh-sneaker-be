@@ -474,9 +474,9 @@ class ProductRepository extends BaseRepository {
             where: {
                 categoryId: categoryId,
                 active: true,
-                ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}), // Lọc nhiều loại
-                ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}), // Lọc nhiều kiểu
-                ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}), // Lọc nhiều màu
+                ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}),
+                ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
+                ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
             },
 
             select: {
@@ -490,6 +490,7 @@ class ProductRepository extends BaseRepository {
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { take: parseInt(take) }),
             ...(req.body.options.sort == 'desc' || req.body.options.sort == 'asc' ? {} : { skip: (step - 1) * take }),
         });
+        
         const productIds = products.map((item) => item.id);
         //number sold
         const groupedProductDetails = await this.dbProductDetail.groupBy({
@@ -593,7 +594,7 @@ class ProductRepository extends BaseRepository {
                 ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}),
                 ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
                 ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
-                ...(req.body.options.sort === 'discount' ? { virtualPrice: { not: null } } : {}),
+                ...(req.body.options.sort === 'discount' ? { virtualPrice: { not: null, gt: 0 } } : {}),
             },
             select: {
                 id: true,
@@ -607,7 +608,16 @@ class ProductRepository extends BaseRepository {
             skip: (step - 1) * take,
             orderBy: orderByCondition,
         });
-
+        const count = await this.db.count({
+            where: {
+                categoryId: categoryId,
+                active: true,
+                ...(req.body.options.typeIds ? { typeId: { in: req.body.options.typeIds } } : {}),
+                ...(req.body.options.styleIds ? { styleIds: { hasSome: req.body.options.styleIds } } : {}),
+                ...(req.body.options.colorIds ? { colorId: { in: req.body.options.colorIds } } : {}),
+                ...(req.body.options.sort === 'discount' ? { virtualPrice: { not: null,  gt: 0 } } : {}),
+            },
+        });
         const productIds = products.map((item) => item.id);
 
         // Số lượng đã bán
@@ -635,7 +645,7 @@ class ProductRepository extends BaseRepository {
         );
 
         const res = await this.getSold(filteredProducts, groupedProductDetails);
-        return res;
+        return {products: res, count: count};
     }
 
     async findAllProductByStep(take, step) {

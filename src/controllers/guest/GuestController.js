@@ -32,6 +32,9 @@ class GuestController {
         app.get('/api/color-by-category/:categoryId', this.findColorsByCategory);
         app.get('/api/type-by-category/:categoryId', this.findTypesByCategory);
         app.get('/api/type-by-category-name/:categoryName', this.findTypesByCategoryName);
+        app.get('/api/style-by-category-name/:categoryName', this.findStylesByCategoryName);
+        app.get('/api/color-by-category-name/:categoryName', this.findColorsByCategoryName);
+        app.get('/api/size-by-category-name/:categoryName', this.findSizesByCategoryName);
 
         app.post('/api/get-product-by-category/:categoryId/:take/:step', this.findProductByCategory);
 
@@ -278,6 +281,63 @@ class GuestController {
                 },
             });
             if (types) return res.status(httpStatus.OK).json({ message: 'Success', types });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findStylesByCategoryName(req, res) {
+        try {
+            const categoryName = req.params.categoryName;
+            const category = await CategoryRepository.db.findFirst({
+                where: {
+                    name: categoryName,
+                },
+            });
+            const styles = await StylesRepository.db.findMany({
+                where: {
+                    categoryId: category.id,
+                },
+            });
+            if (styles) return res.status(httpStatus.OK).json({ message: 'Success', styles });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findColorsByCategoryName(req, res) {
+        try {
+            const categoryName = req.params.categoryName;
+            const category = await CategoryRepository.db.findFirst({
+                where: {
+                    name: categoryName,
+                },
+            });
+            const colors = await ColorRepository.db.findMany({
+                where: {
+                    categoryId: category.id,
+                },
+            });
+            if (colors) return res.status(httpStatus.OK).json({ message: 'Success', colors });
+            else return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch {
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async findSizesByCategoryName(req, res) {
+        try {
+            const categoryName = req.params.categoryName;
+            const category = await CategoryRepository.db.findFirst({
+                where: {
+                    name: categoryName,
+                },
+            });
+            const sizes = await SizeRepository.db.findMany({
+                where: {
+                    categoryId: category.id,
+                },
+            });
+            if (sizes) return res.status(httpStatus.OK).json({ message: 'Success', sizes });
             else return res.status(httpStatus.OK).json({ message: 'Success' });
         } catch {
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });

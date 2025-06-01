@@ -13,7 +13,7 @@ class ProductService {
                     return products;
                 }
                 if (req.body.options.sort == 'desc') {
-                    const sortedProducts = products.sort((a, b) => {
+                    const sortedProducts = products.products.sort((a, b) => {
                         return b.sellPrice - a.sellPrice; // Sắp xếp giảm dần
                     });
                     return sortedProducts;
@@ -115,7 +115,9 @@ class ProductService {
                 return 'Product not found';
             }
             const category = await CategoryRepository.find(product.categoryId);
-            const type = await TypeRepository.find(product.typeId);
+
+            let type = null;
+            if (product.typeId) type = await TypeRepository.find(product.typeId);
 
             const color = await ColorRepository.find(product.colorId);
 
