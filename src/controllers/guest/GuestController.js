@@ -11,6 +11,7 @@ import TypeRepository from '../../repositories/TypeRepository.js';
 import SizeService from '../../services/SizeService.js';
 import CategoryRepository from '../../repositories/CategoryRepository.js';
 import AnnouncementService from '../../services/AnnouncementService.js';
+import BannerService from '../../services/BannerService.js';
 
 class GuestController {
     initRoutes(app) {
@@ -20,6 +21,7 @@ class GuestController {
         app.get('/api/product/:productId', this.findProductById);
         app.get('/api/product-detail-by-product/:productId', this.findProductDetailByProductId);
         app.get('/api/announcements', this.findAllAnnouncements);
+        app.get('/api/banners', this.findAllBanners);
         app.post('/api/get-product-detail-many', this.findProductDetailMany);
         app.get('/api/all-size', this.findAllSize);
         app.get('/api/all-style', this.findAllStyle);
@@ -72,6 +74,20 @@ class GuestController {
             const announcements = await AnnouncementService.getAllAnnouncements();
             if (announcements) {
                 return res.status(httpStatus.OK).json({ message: 'Success', announcements });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllBanners(req, res) {
+        try {
+            const banners = await BannerService.getAllBanners();
+            if (banners) {
+                return res.status(httpStatus.OK).json({ message: 'Success', banners });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
             }

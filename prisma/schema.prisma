@@ -139,6 +139,7 @@ model Announcement {
   @@map("announcement")
 }
 
+
 //PRODUCT
 
 model Product {
@@ -259,13 +260,9 @@ model Commission {
 model Banner {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   image String?
-  link String?
-  shopId String?
-  level String?
-  expired DateTime?
-  createDate DateTime? @default(now())
   active Boolean @default(true)
+  position Int?
+  link String?
   @@map("banner")
 }
 
-//SHIP: Grab, Offline, Viettelpost

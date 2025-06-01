@@ -18,6 +18,7 @@ import AdminService from '../../services/admin/AdminService.js';
 import UserRepository from '../../repositories/UserRepository.js';
 import ColorService from '../../services/ColorService.js';
 import AnnouncementService from '../../services/AnnouncementService.js';
+import BannerService from '../../services/BannerService.js';
 
 class AdminController {
     initRoutes(app) {
@@ -71,6 +72,10 @@ class AdminController {
 
         app.post('/admin/update/announcement', isAuth, this.saveAnnouncement);
         app.get('/admin/delete/announcement/:announcementId', isAuth, this.deleteAnnouncement);
+        app.post('/admin/add/banner', isAuth, this.addBanner);
+        app.get('/admin/get/banner/:position', isAuth, this.getBannerByPosition);
+        app.get('/admin/delete/banner/:bannerId', isAuth, this.deleteAnnouncement);
+        app.get('/admin/delete/category/:categoryId', isAuth, this.deleteCategory);
     }
 
     async registerSubAdmin(req, res) {
@@ -255,7 +260,7 @@ class AdminController {
         }
     }
 
-    async addCategory(req, res) {
+    async addBanner(req, res) {
         try {
             publicUploadFile(req, res, async function (err) {
                 if (err) {
@@ -264,16 +269,31 @@ class AdminController {
 
                 if (req.file) {
                     req.body.image = req.file.path.slice(req.file.path.indexOf('uploads'));
-                    console.log(req.body.image); // Lấy đường dẫn hình ảnh
+                    console.log(req.body.image);
                 } else {
                     return res.status(httpStatus.BAD_REQUEST).json({ message: 'Image is required' });
                 }
-                const category = await AddDataService.saveCategory(req.body);
-                if (category === 'Fail') {
+                req.body.position = 1;
+                const banner = await BannerService.saveBanner(req);
+                if (banner === 'Fail') {
                     return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
                 }
-                return res.status(httpStatus.OK).json({ message: 'Success', category });
+                return res.status(httpStatus.OK).json({ message: 'Success', banner });
             });
+        } catch (error) {
+            console.error(error);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    async addCategory(req, res) {
+        try {
+            const name = req.body.name;
+            const category = await CategoryService.saveCategory(req.body);
+            if (category === 'Fail') {
+                return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success', category });
         } catch (error) {
             console.error(error);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
@@ -643,8 +663,36 @@ class AdminController {
             } else {
                 return res.status(httpStatus.OK).json({ message: 'Fail' });
             }
-        } catch(e) {
-            console.log(e.message)
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async deleteCategory(req, res) {
+        try {
+            const categoryId = req.params.categoryId;
+            const result = await CategoryService.deleteCategory(categoryId);
+            if (result != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success' });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async getBannerByPosition(req, res) {
+        try {
+            const position = req.params.position;
+            const banner = await BannerService.getBannerByPosition(position);
+            if (banner != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', banner });
+            } else {
+                return res.status(httpStatus.OK).json({ message: 'Fail' });
+            }
+        } catch (e) {
+            console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
         }
     }

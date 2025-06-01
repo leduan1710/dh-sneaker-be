@@ -154,6 +154,7 @@ export default class BaseRepository {
     }
 
     saveNoReq(body) {
+        console.log(body)
         const id = body?.id;
         let data = {};
         const fields = this.getFields();
