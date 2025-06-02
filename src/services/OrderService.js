@@ -87,6 +87,23 @@ class OrderService {
         }
     }
 
+    async getNewOrderByPhone(searchTerm) {
+        try {
+            const order = await OrderRepository.db.findMany({
+                where: {
+                    customerPhone: { contains: searchTerm, mode: 'insensitive' },
+                    status: "PROCESSING"
+                },
+            });
+            if (order) {
+                return order;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+
     async getAllOrderByMonth(month, year, take, step) {
         try {
             const orders = await OrderRepository.findAllOrderByMonth(month, year, take, step);
@@ -537,7 +554,7 @@ class OrderService {
                                     commission: commissionRecord.commission + commission,
                                     total: commissionRecord.total + commission,
                                     bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
-                                    quantity: commissionRecord + totalQuantity
+                                    quantity: commissionRecord + totalQuantity,
                                 },
                             });
                         }

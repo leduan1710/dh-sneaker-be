@@ -68,6 +68,8 @@ class AdminController {
         app.get('/admin/get/annual-revenue/:year', isAuth, this.getAnnualRevenue);
 
         app.post('/admin/search/order-by-phone-or-delivering-code', isAuth, this.findOrderByPhoneOrDeliveringCode);
+        app.post('/admin/search/new-order-by-phone', isAuth, this.findNewOrderByPhone);
+
         app.post('/admin/search/product-by-name', isAuth, this.findProductByName);
         app.post('/admin/register-sub-admin', isAuth, this.registerSubAdmin);
 
@@ -618,6 +620,20 @@ class AdminController {
         try {
             const searchTerm = req.body.searchTerm;
             const order = await OrderService.getOrderByPhoneOrDeliveringCode(searchTerm);
+            if (order) {
+                return res.status(httpStatus.OK).json({ message: 'Success', order });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+    async findNewOrderByPhone(req, res) {
+        try {
+            const searchTerm = req.body.searchTerm;
+            const order = await OrderService.getNewOrderByPhone(searchTerm);
             if (order) {
                 return res.status(httpStatus.OK).json({ message: 'Success', order });
             } else {
