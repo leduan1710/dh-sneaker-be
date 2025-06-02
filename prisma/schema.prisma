@@ -28,6 +28,7 @@ enum SHIPMETHOD {
   VIETTELPOST
   OFFLINE
   GRAB
+  GGDH
 }
 
 enum StatusNotification {

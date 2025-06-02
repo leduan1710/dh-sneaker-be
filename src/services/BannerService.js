@@ -16,8 +16,8 @@ class BannerService {
     }
     async getAllBanners() {
         try {
-            const announcements = await BannerRepository.findAll();
-            return announcements;
+            const banners = await BannerRepository.findAll();
+            return banners;
         } catch (e) {
             console.log(e.message);
             return 'Fail';

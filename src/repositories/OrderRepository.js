@@ -77,11 +77,30 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllOrderByStep(take, step) {
+    async findAllOrderByStep(take, step, status, shipMethod) {
         const orders = await this.db.findMany({
             where: {
                 status: {
                     not: 'PROCESSING',
+                },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+            take: parseInt(take),
+            skip: (step - 1) * take,
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+        });
+        return orders;
+    }
+
+    async findAllReturnOrderByStep(take, step) {
+        const orders = await this.db.findMany({
+            where: {
+                status: {
+                    in: ['BOOM', 'CANCEL', 'GGDH'],
                 },
             },
             take: parseInt(take),
@@ -105,7 +124,7 @@ class OrderRepository extends BaseRepository {
         return count;
     }
 
-    async getOrderCountInMonth(month, year) {
+    async getOrderCountInMonth(month, year, status, shipMethod) {
         const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
         const count = await this.db.count({
@@ -114,12 +133,14 @@ class OrderRepository extends BaseRepository {
                     gte: startOfMonth,
                     lte: endOfMonth,
                 },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
             },
         });
         return count;
     }
 
-    async findAllOrderByMonth(month, year, take, step) {
+    async findAllOrderByMonth(month, year, take, step, status, shipMethod) {
         const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
@@ -129,7 +150,10 @@ class OrderRepository extends BaseRepository {
                     gte: startOfMonth,
                     lte: endOfMonth,
                 },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
             },
+
             take: parseInt(take),
             skip: (step - 1) * take,
             orderBy: {
@@ -140,7 +164,32 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllOrderByCTVName(ctvName, month, year) {
+    async findAllOrderByCTVName(ctvName, take, step, status, shipMethod) {
+        const orders = await this.db.findMany({
+            where: {
+                ctvName: ctvName,
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+            take: parseInt(take),
+            skip: (step - 1) * take,
+        });
+
+        const count = await this.db.count({
+            where: {
+                ctvName: ctvName,
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+        });
+        return { orders, count };
+    }
+
+    async findAllOrderByCTVNameInMonth(ctvName, month, year, take, step, status, shipMethod) {
         const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
@@ -151,13 +200,29 @@ class OrderRepository extends BaseRepository {
                     gte: startOfMonth,
                     lte: endOfMonth,
                 },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
             },
             orderBy: {
                 createDate: 'desc',
             },
             select: this.defaultSelect,
+            take: parseInt(take),
+            skip: (step - 1) * take,
         });
-        return orders;
+
+        const count = await this.db.count({
+            where: {
+                ctvName: ctvName,
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+        });
+        return { orders, count };
     }
 
     async findAllOrderByCTV(userId, month, year) {
@@ -216,6 +281,63 @@ class OrderRepository extends BaseRepository {
 
         const commissions = await CommissionRepository.db.findMany({
             where: {
+                month: month,
+                year: year,
+            },
+            select: {
+                commission: true,
+                bonus: true,
+                quantity: true,
+            },
+        });
+
+        commissions.forEach((comm) => {
+            result.commission += comm.commission || 0;
+            result.bonus += comm.bonus || 0;
+            result.quantity += comm.quantity || 0;
+        });
+
+        return result;
+    }
+
+    async getRevenueAndCommissionByCtvNameAndMonth(month, year, ctvName) {
+        const startOfMonth = new Date(year, month - 1, 0, 23, 59, 59);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+        const result = {
+            revenue: 0,
+            commission: 0,
+            bonus: 0,
+            quantity: 0,
+        };
+
+        const successfulOrders = await this.db.findMany({
+            where: {
+                ctvName: ctvName,
+                status: 'SUCCESS',
+                createDate: {
+                    gte: startOfMonth,
+                    lte: endOfMonth,
+                },
+            },
+        });
+
+        const orderDetailIds = successfulOrders.flatMap((order) => order.orderDetailIdList);
+
+        const orderDetails = await OrderDetailRepository.db.findMany({
+            where: {
+                id: { in: orderDetailIds },
+            },
+        });
+
+        orderDetails.forEach((detail) => {
+            const revenueFromDetail = (detail.ctvPrice - detail.importPrice) * detail.quantity;
+            result.revenue += revenueFromDetail;
+        });
+
+        const commissions = await CommissionRepository.db.findMany({
+            where: {
+                ctvName: ctvName,
                 month: month,
                 year: year,
             },

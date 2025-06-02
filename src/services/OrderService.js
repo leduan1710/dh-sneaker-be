@@ -45,9 +45,31 @@ class OrderService {
             return 'Fail';
         }
     }
-    async getAllOrderByStep(take, step) {
+    async getAllOrderByStep(take, step, status, shipMethod) {
         try {
-            const orders = await OrderRepository.findAllOrderByStep(take, step);
+            const orders = await OrderRepository.findAllOrderByStep(take, step, status, shipMethod);
+            const count = await OrderRepository.db.count({
+                where: {
+                    status: {
+                        not: 'PROCESSING',
+                    },
+                    ...(status && status !== 'ALL' ? { status } : {}),
+                    ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                },
+            });
+            return {
+                orders: orders,
+                count: count,
+            };
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getAllReturnOrderByStep(take, step) {
+        try {
+            const orders = await OrderRepository.findAllReturnOrderByStep(take, step);
             const count = await OrderRepository.getOrderCount();
             return {
                 orders: orders,
@@ -59,9 +81,27 @@ class OrderService {
         }
     }
 
-    async getAllOrderByCTVName(ctvName, month, year) {
+    async getAllOrderByCTVName(ctvName, take, step, status, shipMethod) {
         try {
-            const orders = await OrderRepository.findAllOrderByCTVName(ctvName, month, year);
+            const orders = await OrderRepository.findAllOrderByCTVName(ctvName, take, step, status, shipMethod);
+            return orders;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getAllOrderByCTVNameInMonth(ctvName, month, year, take, step, status, shipMethod) {
+        try {
+            const orders = await OrderRepository.findAllOrderByCTVNameInMonth(
+                ctvName,
+                month,
+                year,
+                take,
+                step,
+                status,
+                shipMethod,
+            );
             return orders;
         } catch (e) {
             console.log(e.message);
@@ -105,10 +145,10 @@ class OrderService {
         }
     }
 
-    async getAllOrderByMonth(month, year, take, step) {
+    async getAllOrderByMonth(month, year, take, step, status, shipMethod) {
         try {
-            const orders = await OrderRepository.findAllOrderByMonth(month, year, take, step);
-            const count = await OrderRepository.getOrderCountInMonth(month, year);
+            const orders = await OrderRepository.findAllOrderByMonth(month, year, take, step, status, shipMethod);
+            const count = await OrderRepository.getOrderCountInMonth(month, year, status, shipMethod);
             return {
                 orders: orders,
                 count: count,
@@ -132,6 +172,20 @@ class OrderService {
     async getRevenueAndCommissionByMonth(month, year) {
         try {
             const revenueAndCommission = await OrderRepository.getRevenueAndCommissionByMonth(month, year);
+            return revenueAndCommission;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getRevenueAndCommissionByCtvNameAndMonth(month, year, ctvName) {
+        try {
+            const revenueAndCommission = await OrderRepository.getRevenueAndCommissionByCtvNameAndMonth(
+                month,
+                year,
+                ctvName,
+            );
             return revenueAndCommission;
         } catch (e) {
             console.log(e.message);
@@ -217,7 +271,7 @@ class OrderService {
                             },
                         });
                     }
-                    
+
                     return updatedOrder;
                 } else {
                     return 'Fail';
@@ -479,6 +533,7 @@ class OrderService {
             return 'Fail';
         }
     }
+
     async createOrder(orderId, token, orderNote) {
         try {
             const order = await OrderRepository.find(orderId);
@@ -519,7 +574,7 @@ class OrderService {
                     PRODUCT_TYPE: 'HH',
                     ORDER_PAYMENT: 3,
                     ORDER_SERVICE: 'VSL7',
-                    ORDER_SERVICE_ADD: '',
+                    ORDER_SERVICE_ADD: order.shipMethod === 'VIETTELPOST' ? '' : 'GGDH',
                     ORDER_NOTE:
                         'Cho kiểm hàng, không được thử hàng. Có vấn đề đơn hàng lên trạng thái giúp shop. KHÔNG TỰ Ý HOÀN HÀNG VÀ CHO KHÁCH THỬ HÀNG. ( ĐỀN 100%)',
                     MONEY_COLLECTION: order.CODPrice,

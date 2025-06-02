@@ -40,9 +40,15 @@ class AdminController {
         app.post('/admin/add/style', isAuth, this.addStyle);
 
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
-        app.get('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
-        app.get('/admin/get-orders-by-ctv/:ctvName/:month/:year', isAuth, this.findAllOrderByCTVName);
-        app.get('/admin/get-orders-by-month/:month/:year/:take/:step', isAuth, this.findAllOrderByMonth);
+        app.post('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
+        app.post('/admin/get-orders-by-ctv/:ctvName/:take/:step', isAuth, this.findAllOrderByCTVName);
+        app.get('/admin/get-return-orders/:take/:step', isAuth, this.findAllOrderByStep);
+        app.post(
+            '/admin/get-orders-by-ctv-and-month/:ctvName/:month/:year/:take/:step',
+            isAuth,
+            this.findAllOrderByCTVNameInMonth,
+        );
+        app.post('/admin/get-orders-by-month/:month/:year/:take/:step', isAuth, this.findAllOrderByMonth);
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.post('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
@@ -65,6 +71,12 @@ class AdminController {
 
         app.get('/admin/get/order-count/:month/:year', isAuth, this.getOrderCountsByMonth);
         app.get('/admin/get/revenue-commission/:month/:year', isAuth, this.getRevenueAndCommissionByMonth);
+        app.get(
+            '/admin/get/revenue-commission-by-ctvName/:ctvName/:month/:year',
+            isAuth,
+            this.getRevenueAndCommissionByCTVNameAndMonth,
+        );
+
         app.get('/admin/get/annual-revenue/:year', isAuth, this.getAnnualRevenue);
 
         app.post('/admin/search/order-by-phone-or-delivering-code', isAuth, this.findOrderByPhoneOrDeliveringCode);
@@ -448,7 +460,9 @@ class AdminController {
         try {
             const take = req.params.take;
             const step = req.params.step;
-            const orders = await OrderService.getAllOrderByStep(take, step);
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const orders = await OrderService.getAllOrderByStep(take, step, status, shipMethod);
             if (orders != 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -463,10 +477,56 @@ class AdminController {
     async findAllOrderByCTVName(req, res) {
         try {
             const ctvName = req.params.ctvName;
+            const take = req.params.take;
+            const step = req.params.step;
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const orders = await OrderService.getAllOrderByCTVName(ctvName, take, step, status, shipMethod);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllReturnOrderByStep(req, res) {
+        try {
+            const take = req.params.take;
+            const step = req.params.step;
+            const orders = await OrderService.getAllReturnOrderByStep(take, step);
+            if (orders != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllOrderByCTVNameInMonth(req, res) {
+        try {
+            const ctvName = req.params.ctvName;
             const month = parseInt(req.params.month);
             const year = parseInt(req.params.year);
-
-            const orders = await OrderService.getAllOrderByCTVName(ctvName, month, year);
+            const take = req.params.take;
+            const step = req.params.step;
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const orders = await OrderService.getAllOrderByCTVNameInMonth(
+                ctvName,
+                month,
+                year,
+                take,
+                step,
+                status,
+                shipMethod,
+            );
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -484,7 +544,9 @@ class AdminController {
             const year = parseInt(req.params.year);
             const take = req.params.take;
             const step = req.params.step;
-            const orders = await OrderService.getAllOrderByMonth(month, year, take, step);
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const orders = await OrderService.getAllOrderByMonth(month, year, take, step, status, shipMethod);
             if (orders !== 'Fail') {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -527,7 +589,22 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
-
+    async getRevenueAndCommissionByCTVNameAndMonth(req, res) {
+        try {
+            const month = parseInt(req.params.month);
+            const year = parseInt(req.params.year);
+            const ctvName = req.params.ctvName;
+            const data = await OrderService.getRevenueAndCommissionByCtvNameAndMonth(month, year, ctvName);
+            if (data) {
+                return res.status(httpStatus.OK).json({ message: 'Success', data });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
     async getOrderCountsByMonth(req, res) {
         try {
             const month = parseInt(req.params.month);
