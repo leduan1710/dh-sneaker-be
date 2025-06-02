@@ -8,6 +8,7 @@ import UserRepository from '../repositories/UserRepository.js';
 
 class OrderService {
     async calculateBonus(totalQuantity) {
+        console.log('Total Quantity:', totalQuantity);
         if (totalQuantity >= 300) return 700000;
         if (totalQuantity >= 200) return 400000;
         if (totalQuantity >= 150) return 250000;
@@ -92,7 +93,7 @@ class OrderService {
             const order = await OrderRepository.db.findMany({
                 where: {
                     customerPhone: { contains: searchTerm, mode: 'insensitive' },
-                    status: "PROCESSING"
+                    status: 'PROCESSING',
                 },
             });
             if (order) {
@@ -165,6 +166,8 @@ class OrderService {
             const totalQuantity = orderDetails
                 .filter((detail) => !detail.isJibbitz)
                 .reduce((sum, detail) => sum + detail.quantity, 0);
+            let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
+
             if (order.status === 'PROCESSING') {
                 // Cập nhật trạng thái đơn hàng
                 const updatedOrder = await OrderRepository.update(orderId, {
@@ -192,7 +195,7 @@ class OrderService {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
                                 commission: commission,
-                                bonus: this.calculateBonus(totalQuantity),
+                                bonus: bonusValue,
                                 quantity: totalQuantity,
                                 total: commission,
                                 month: month,
@@ -200,6 +203,8 @@ class OrderService {
                             },
                         });
                     } else {
+                        bonusValue = (await this.calculateBonus(commissionRecord.quantity + totalQuantity)) || 0;
+
                         commissionRecord = await CommissionRepository.db.update({
                             where: {
                                 id: commissionRecord.id,
@@ -208,10 +213,11 @@ class OrderService {
                                 commission: commissionRecord.commission + commission,
                                 total: commissionRecord.total + commission,
                                 quantity: commissionRecord.quantity + totalQuantity,
-                                bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
+                                bonus: bonusValue,
                             },
                         });
                     }
+                    
                     return updatedOrder;
                 } else {
                     return 'Fail';
@@ -241,6 +247,8 @@ class OrderService {
             const totalQuantity = orderDetails
                 .filter((detail) => !detail.isJibbitz)
                 .reduce((sum, detail) => sum + detail.quantity, 0);
+            let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
+
             let commissionBoom = -60000;
             if (order) {
                 if (order.status === 'SUCCESS') commissionBoom = commissionBoom - commissionSuccess;
@@ -277,6 +285,8 @@ class OrderService {
                             },
                         });
                     } else {
+                        bonusValue = (await this.calculateBonus(commissionRecord.quantity - totalQuantity)) || 0;
+
                         commissionRecord = await CommissionRepository.db.update({
                             where: {
                                 id: commissionRecord.id,
@@ -285,7 +295,7 @@ class OrderService {
                                 commission: commissionRecord.commission + commissionBoom,
                                 total: commissionRecord.total + commissionBoom,
                                 quantity: commissionRecord.quantity - totalQuantity,
-                                bonus: this.calculateBonus(commissionRecord.quantity - totalQuantity),
+                                bonus: bonusValue,
                             },
                         });
                     }
@@ -301,6 +311,7 @@ class OrderService {
             return 'Fail';
         }
     }
+
     async succeedOrder(orderId) {
         try {
             const order = await OrderRepository.find(orderId);
@@ -318,6 +329,8 @@ class OrderService {
             const totalQuantity = orderDetails
                 .filter((detail) => !detail.isJibbitz)
                 .reduce((sum, detail) => sum + detail.quantity, 0);
+            let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
+
             let commissionBoom = 0;
             if (order) {
                 if (order.status === 'BOOM') commissionBoom = 60000;
@@ -346,7 +359,7 @@ class OrderService {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
                                 commission: commission,
-                                bonus: this.calculateBonus(totalQuantity),
+                                bonus: bonusValue,
                                 quantity: totalQuantity,
                                 total: commission,
                                 month: month,
@@ -354,6 +367,8 @@ class OrderService {
                             },
                         });
                     } else {
+                        bonusValue = (await this.calculateBonus(commissionRecord.quantity + totalQuantity)) || 0;
+
                         commissionRecord = await CommissionRepository.db.update({
                             where: {
                                 id: commissionRecord.id,
@@ -362,7 +377,7 @@ class OrderService {
                                 commission: commissionRecord.commission + commission + commissionBoom,
                                 total: commissionRecord.total + commission + commissionBoom,
                                 quantity: commissionRecord.quantity + totalQuantity,
-                                bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
+                                bonus: bonusValue,
                             },
                         });
                     }
@@ -378,6 +393,7 @@ class OrderService {
             return 'Fail';
         }
     }
+
     async cancelledOrder(orderId, cancelReason) {
         try {
             const order = await OrderRepository.find(orderId);
@@ -397,6 +413,7 @@ class OrderService {
             const totalQuantity = orderDetails
                 .filter((detail) => !detail.isJibbitz)
                 .reduce((sum, detail) => sum + detail.quantity, 0);
+
             const isSuccessOrder = order.status === 'SUCCESS';
             if (order) {
                 const updatedOrder = await OrderRepository.update(orderId, {
@@ -420,6 +437,9 @@ class OrderService {
                         });
 
                         if (commissionRecord) {
+                            const bonusValue =
+                                (await this.calculateBonus(commissionRecord.quantity - totalQuantity)) || 0;
+
                             commissionRecord = await CommissionRepository.db.update({
                                 where: {
                                     id: commissionRecord.id,
@@ -428,7 +448,7 @@ class OrderService {
                                     commission: commissionRecord.commission - commission,
                                     total: commissionRecord.total - commission,
                                     quantity: commissionRecord.quantity - totalQuantity,
-                                    bonus: this.calculateBonus(commissionRecord.quantity - totalQuantity),
+                                    bonus: bonusValue,
                                 },
                             });
                         }
@@ -476,6 +496,7 @@ class OrderService {
             const totalQuantity = orderDetails
                 .filter((detail) => !detail.isJibbitz)
                 .reduce((sum, detail) => sum + detail.quantity, 0);
+            let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
             if (order) {
                 const orderData = {
                     GROUPADDRESS_ID: 20236399,
@@ -539,13 +560,14 @@ class OrderService {
                                     userId: order.userId,
                                     ctvName: order.ctvName,
                                     commission: commission,
-                                    bonus: this.calculateBonus(totalQuantity),
+                                    bonus: bonusValue,
                                     total: commission,
                                     month: month,
                                     year: year,
                                 },
                             });
                         } else {
+                            bonusValue = (await this.calculateBonus(commissionRecord.quantity + totalQuantity)) || 0;
                             commissionRecord = await CommissionRepository.db.update({
                                 where: {
                                     id: commissionRecord.id,
@@ -553,8 +575,8 @@ class OrderService {
                                 data: {
                                     commission: commissionRecord.commission + commission,
                                     total: commissionRecord.total + commission,
-                                    bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
-                                    quantity: commissionRecord + totalQuantity,
+                                    bonus: bonusValue,
+                                    quantity: commissionRecord.quantity + totalQuantity,
                                 },
                             });
                         }
