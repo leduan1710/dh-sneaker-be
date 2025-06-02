@@ -7,6 +7,16 @@ import OrderRepository from '../repositories/OrderRepository.js';
 import UserRepository from '../repositories/UserRepository.js';
 
 class OrderService {
+    async calculateBonus(totalQuantity) {
+        if (totalQuantity >= 300) return 700000;
+        if (totalQuantity >= 200) return 400000;
+        if (totalQuantity >= 150) return 250000;
+        if (totalQuantity >= 100) return 150000;
+        if (totalQuantity >= 50) return 60000;
+        if (totalQuantity >= 30) return 300000;
+        return 0;
+    }
+
     async saveOrder(req) {
         try {
             const order = await OrderRepository.saveUpload(req);
@@ -135,14 +145,16 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
-
+            const totalQuantity = orderDetails
+                .filter((detail) => !detail.isJibbitz)
+                .reduce((sum, detail) => sum + detail.quantity, 0);
             if (order.status === 'PROCESSING') {
                 // Cập nhật trạng thái đơn hàng
                 const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'SUCCESS',
                     updateDate: new Date(),
                     commission: commission,
-                    adminNote: orderNote ? orderNote : null
+                    adminNote: orderNote ? orderNote : null,
                 });
 
                 if (updatedOrder) {
@@ -163,7 +175,8 @@ class OrderService {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
                                 commission: commission,
-                                bonus: 0,
+                                bonus: this.calculateBonus(totalQuantity),
+                                quantity: totalQuantity,
                                 total: commission,
                                 month: month,
                                 year: year,
@@ -177,6 +190,8 @@ class OrderService {
                             data: {
                                 commission: commissionRecord.commission + commission,
                                 total: commissionRecord.total + commission,
+                                quantity: commissionRecord.quantity + totalQuantity,
+                                bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
                             },
                         });
                     }
@@ -195,8 +210,23 @@ class OrderService {
     async boomedOrder(orderId) {
         try {
             const order = await OrderRepository.find(orderId);
-            const commission = -60000;
+            const orderDetails = await OrderDetailRepository.db.findMany({
+                where: {
+                    orderId: order.id,
+                },
+            });
+            const commissionSuccess =
+                order.CODPrice -
+                order.shipFee -
+                orderDetails.reduce((total, detail) => {
+                    return total + detail.ctvPrice * detail.quantity;
+                }, 0);
+            const totalQuantity = orderDetails
+                .filter((detail) => !detail.isJibbitz)
+                .reduce((sum, detail) => sum + detail.quantity, 0);
+            let commissionBoom = -60000;
             if (order) {
+                if (order.status === 'SUCCESS') commissionBoom = commissionBoom - commissionSuccess;
                 // Cập nhật trạng thái đơn hàng
                 const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'BOOM',
@@ -221,9 +251,10 @@ class OrderService {
                             data: {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
-                                commission: commission,
+                                commission: commissionBoom,
                                 bonus: 0,
-                                total: commission,
+                                quantity: 0,
+                                total: commissionBoom,
                                 month: month,
                                 year: year,
                             },
@@ -234,8 +265,10 @@ class OrderService {
                                 id: commissionRecord.id,
                             },
                             data: {
-                                commission: commissionRecord.commission + commission,
-                                total: commissionRecord.total + commission,
+                                commission: commissionRecord.commission + commissionBoom,
+                                total: commissionRecord.total + commissionBoom,
+                                quantity: commissionRecord.quantity - totalQuantity,
+                                bonus: this.calculateBonus(commissionRecord.quantity - totalQuantity),
                             },
                         });
                     }
@@ -265,6 +298,9 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
+            const totalQuantity = orderDetails
+                .filter((detail) => !detail.isJibbitz)
+                .reduce((sum, detail) => sum + detail.quantity, 0);
             let commissionBoom = 0;
             if (order) {
                 if (order.status === 'BOOM') commissionBoom = 60000;
@@ -293,7 +329,8 @@ class OrderService {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
                                 commission: commission,
-                                bonus: 0,
+                                bonus: this.calculateBonus(totalQuantity),
+                                quantity: totalQuantity,
                                 total: commission,
                                 month: month,
                                 year: year,
@@ -307,6 +344,8 @@ class OrderService {
                             data: {
                                 commission: commissionRecord.commission + commission + commissionBoom,
                                 total: commissionRecord.total + commission + commissionBoom,
+                                quantity: commissionRecord.quantity + totalQuantity,
+                                bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
                             },
                         });
                     }
@@ -338,6 +377,9 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
+            const totalQuantity = orderDetails
+                .filter((detail) => !detail.isJibbitz)
+                .reduce((sum, detail) => sum + detail.quantity, 0);
             const isSuccessOrder = order.status === 'SUCCESS';
             if (order) {
                 const updatedOrder = await OrderRepository.update(orderId, {
@@ -368,6 +410,8 @@ class OrderService {
                                 data: {
                                     commission: commissionRecord.commission - commission,
                                     total: commissionRecord.total - commission,
+                                    quantity: commissionRecord.quantity - totalQuantity,
+                                    bonus: this.calculateBonus(commissionRecord.quantity - totalQuantity),
                                 },
                             });
                         }
@@ -412,6 +456,9 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
+            const totalQuantity = orderDetails
+                .filter((detail) => !detail.isJibbitz)
+                .reduce((sum, detail) => sum + detail.quantity, 0);
             if (order) {
                 const orderData = {
                     GROUPADDRESS_ID: 20236399,
@@ -454,7 +501,7 @@ class OrderService {
                             status: 'SUCCESS',
                             commission: commission,
                             deliveryCode: response.data.data.ORDER_NUMBER,
-                            adminNote: orderNote ? orderNote : null
+                            adminNote: orderNote ? orderNote : null,
                         },
                     });
                     if (updatedOrder) {
@@ -475,7 +522,7 @@ class OrderService {
                                     userId: order.userId,
                                     ctvName: order.ctvName,
                                     commission: commission,
-                                    bonus: 0,
+                                    bonus: this.calculateBonus(totalQuantity),
                                     total: commission,
                                     month: month,
                                     year: year,
@@ -489,6 +536,8 @@ class OrderService {
                                 data: {
                                     commission: commissionRecord.commission + commission,
                                     total: commissionRecord.total + commission,
+                                    bonus: this.calculateBonus(commissionRecord.quantity + totalQuantity),
+                                    quantity: commissionRecord + totalQuantity
                                 },
                             });
                         }
@@ -531,6 +580,15 @@ class OrderService {
     async getAnnualRevenue(year) {
         try {
             const revenue = await OrderRepository.getAnnualRevenue(year);
+            return revenue;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+    async getRevenueInMonth(month) {
+        try {
+            const revenue = await OrderRepository.getRevenueInMonth(month);
             return revenue;
         } catch (e) {
             console.log(e.message);

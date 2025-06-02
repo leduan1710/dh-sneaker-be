@@ -188,6 +188,7 @@ class OrderRepository extends BaseRepository {
             revenue: 0,
             commission: 0,
             bonus: 0,
+            quantity: 0,
         };
 
         const successfulOrders = await this.db.findMany({
@@ -221,12 +222,14 @@ class OrderRepository extends BaseRepository {
             select: {
                 commission: true,
                 bonus: true,
+                quantity: true,
             },
         });
 
         commissions.forEach((comm) => {
             result.commission += comm.commission || 0;
             result.bonus += comm.bonus || 0;
+            result.quantity += comm.quantity || 0;
         });
 
         return result;

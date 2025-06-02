@@ -248,6 +248,7 @@ model Commission {
   ctvName String?
   commission Float?
   bonus Float? @default(0)
+  quantity Int? @default(0)
   total Float?
   note String?
   isPaid Boolean @default(false)

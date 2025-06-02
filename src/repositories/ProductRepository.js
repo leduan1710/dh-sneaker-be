@@ -274,7 +274,6 @@ class ProductRepository extends BaseRepository {
                 image: true,
                 userFavoriteIdList: true,
                 percentDiscountTop: true,
-                //{"color":"[red,green,blue]","size":"[M,L,XL]"}
                 shopId: true,
             },
             take: 12,

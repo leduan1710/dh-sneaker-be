@@ -52,6 +52,7 @@ class AdminController {
 
         app.post('/admin/update/commission-note', isAuth, this.commissionNote);
         app.get('/admin/get/commission-by-month-year/:month/:year', isAuth, this.commissionStatistic);
+
         app.get('/admin/commission-paid-confirm/:commissionId', isAuth, this.confirmCommissionIsPaid);
 
         app.get('/admin/get/users', isAuth, this.findAllUsers);
@@ -813,6 +814,7 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+
     async findProductByName(req, res) {
         try {
             const searchTerm = req.body.name;
