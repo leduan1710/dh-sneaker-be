@@ -8,7 +8,6 @@ import UserRepository from '../repositories/UserRepository.js';
 
 class OrderService {
     async calculateBonus(totalQuantity) {
-        console.log('Total Quantity:', totalQuantity);
         if (totalQuantity >= 300) return 700000;
         if (totalQuantity >= 200) return 400000;
         if (totalQuantity >= 150) return 250000;
@@ -349,14 +348,21 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
-            const totalQuantity = orderDetails
-                .filter((detail) => !detail.isJibbitz)
-                .reduce((sum, detail) => sum + detail.quantity, 0);
+            const totalQuantity =
+                order.shipMethod === 'GGDH'
+                    ? 0
+                    : orderDetails
+                          .filter((detail) => !detail.isJibbitz)
+                          .reduce((sum, detail) => sum + detail.quantity, 0);
             let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
 
             let commissionBoom = -60000;
             if (order) {
-                if (order.status === 'SUCCESS') commissionBoom = commissionBoom - commissionSuccess;
+                if (order.status === 'SUCCESS')
+                    commissionBoom =
+                        order.shipMethod === 'GGDH'
+                            ? commissionBoom - (order.CODPrice - order.shipFee)
+                            : commissionBoom - commissionSuccess;
                 // Cập nhật trạng thái đơn hàng
                 const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'BOOM',
@@ -431,9 +437,12 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
-            const totalQuantity = orderDetails
-                .filter((detail) => !detail.isJibbitz)
-                .reduce((sum, detail) => sum + detail.quantity, 0);
+            const totalQuantity =
+                order.shipMethod === 'GGDH'
+                    ? 0
+                    : orderDetails
+                          .filter((detail) => !detail.isJibbitz)
+                          .reduce((sum, detail) => sum + detail.quantity, 0);
             let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
 
             let commissionBoom = 0;
@@ -443,7 +452,7 @@ class OrderService {
                 const updatedOrder = await OrderRepository.update(orderId, {
                     status: 'SUCCESS',
                     updateDate: new Date(),
-                    commission: commission,
+                    commission: order.shipMethod === 'GGDH' ? order.CODPrice - order.shipFee : commission,
                 });
 
                 if (updatedOrder) {
@@ -463,10 +472,10 @@ class OrderService {
                             data: {
                                 userId: order.userId,
                                 ctvName: order.ctvName,
-                                commission: commission,
+                                commission: order.shipMethod === 'GGDH' ? order.CODPrice - order.shipFee : commission,
                                 bonus: bonusValue,
                                 quantity: totalQuantity,
-                                total: commission,
+                                total: order.shipMethod === 'GGDH' ? order.CODPrice - order.shipFee : commission,
                                 month: month,
                                 year: year,
                             },
@@ -479,8 +488,14 @@ class OrderService {
                                 id: commissionRecord.id,
                             },
                             data: {
-                                commission: commissionRecord.commission + commission + commissionBoom,
-                                total: commissionRecord.total + commission + commissionBoom,
+                                commission:
+                                    order.shipMethod === 'GGDH'
+                                        ? commissionRecord.commission + order.CODPrice - order.shipFee + commissionBoom
+                                        : commissionRecord.commission + commission + commissionBoom,
+                                total:
+                                    order.shipMethod === 'GGDH'
+                                        ? commissionRecord.total + order.CODPrice - order.shipFee + commissionBoom
+                                        : commissionRecord.total + commission + commissionBoom,
                                 quantity: commissionRecord.quantity + totalQuantity,
                                 bonus: bonusValue,
                             },
@@ -515,9 +530,12 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
-            const totalQuantity = orderDetails
-                .filter((detail) => !detail.isJibbitz)
-                .reduce((sum, detail) => sum + detail.quantity, 0);
+            const totalQuantity =
+                order.shipMethod === 'GGDH'
+                    ? 0
+                    : orderDetails
+                          .filter((detail) => !detail.isJibbitz)
+                          .reduce((sum, detail) => sum + detail.quantity, 0);
 
             const isSuccessOrder = order.status === 'SUCCESS';
             if (order) {
@@ -550,8 +568,14 @@ class OrderService {
                                     id: commissionRecord.id,
                                 },
                                 data: {
-                                    commission: commissionRecord.commission - commission,
-                                    total: commissionRecord.total - commission,
+                                    commission:
+                                        order.shipMethod === 'GGDH'
+                                            ? commissionRecord.commission - (order.CODPrice - order.shipFee)
+                                            : commissionRecord.commission - commission,
+                                    total:
+                                        order.shipMethod === 'GGDH'
+                                            ? commissionRecord.total - (order.CODPrice - order.shipFee)
+                                            : commissionRecord.total - commission,
                                     quantity: commissionRecord.quantity - totalQuantity,
                                     bonus: bonusValue,
                                 },
@@ -599,9 +623,13 @@ class OrderService {
                 orderDetails.reduce((total, detail) => {
                     return total + detail.ctvPrice * detail.quantity;
                 }, 0);
-            const totalQuantity = orderDetails
-                .filter((detail) => !detail.isJibbitz)
-                .reduce((sum, detail) => sum + detail.quantity, 0);
+            const commissionDH = order.CODPrice - order.shipFee;
+            const totalQuantity =
+                order.shipMethod === 'GGDH'
+                    ? 0
+                    : orderDetails
+                          .filter((detail) => !detail.isJibbitz)
+                          .reduce((sum, detail) => sum + detail.quantity, 0);
             let bonusValue = (await this.calculateBonus(totalQuantity)) || 0;
             if (order) {
                 const orderData = {
@@ -643,7 +671,7 @@ class OrderService {
                         },
                         data: {
                             status: 'SUCCESS',
-                            commission: commission,
+                            commission: order.shipMethod === 'GGDH' ? commissionDH : commission,
                             deliveryCode: response.data.data.ORDER_NUMBER,
                             adminNote: orderNote ? orderNote : null,
                         },
@@ -659,15 +687,16 @@ class OrderService {
                                 year: year,
                             },
                         });
-
                         if (!commissionRecord) {
                             commissionRecord = await CommissionRepository.db.create({
                                 data: {
                                     userId: order.userId,
                                     ctvName: order.ctvName,
-                                    commission: commission,
+                                    commission:
+                                        order.shipMethod === 'GGDH' ? order.CODPrice - order.shipFee : commission,
                                     bonus: bonusValue,
-                                    total: commission,
+                                    total: order.shipMethod === 'GGDH' ? order.CODPrice - order.shipFee : commission,
+                                    quantity: totalQuantity,
                                     month: month,
                                     year: year,
                                 },
@@ -679,8 +708,14 @@ class OrderService {
                                     id: commissionRecord.id,
                                 },
                                 data: {
-                                    commission: commissionRecord.commission + commission,
-                                    total: commissionRecord.total + commission,
+                                    commission:
+                                        order.shipMethod === 'GGDH'
+                                            ? commissionRecord.commission + order.CODPrice - order.shipFee
+                                            : commissionRecord.commission + commission,
+                                    total:
+                                        order.shipMethod === 'GGDH'
+                                            ? commissionRecord.total + order.CODPrice - order.shipFee
+                                            : commissionRecord.total + commission,
                                     bonus: bonusValue,
                                     quantity: commissionRecord.quantity + totalQuantity,
                                 },

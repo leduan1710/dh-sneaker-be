@@ -185,6 +185,7 @@ class UserService {
             const orderCountInMonth = await OrderRepository.db.count({
                 where: {
                     userId: order.userId,
+                    shipMethod: {not: "GGDH"},
                     createDate: {
                         gte: startOfMonth,
                     },
@@ -192,7 +193,9 @@ class UserService {
             });
 
             const lastName = order.ctvName.split(' ').pop();
-            const orderCode = `${lastName}_T${month}_${year}_${orderCountInMonth + 1}`;
+            let orderCode = `${lastName}_T${month}_${year}_${orderCountInMonth + 1}`;
+            if(order.shipMethod === "GGDH")
+                orderCode = `${lastName}_T${month}_${year}_DH`;
             if (listOrderDetail.length > 0) {
                 order.status = 'PROCESSING';
                 order.orderCode = orderCode;
