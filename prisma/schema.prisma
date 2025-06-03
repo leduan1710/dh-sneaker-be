@@ -224,6 +224,7 @@ model Orders {
   status String
   orderDescribe String?
   isOnline Boolean @default(true)
+  isReturn Boolean @default(false)
   @@map("orders")
 }
 

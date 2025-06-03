@@ -19,6 +19,7 @@ import UserRepository from '../../repositories/UserRepository.js';
 import ColorService from '../../services/ColorService.js';
 import AnnouncementService from '../../services/AnnouncementService.js';
 import BannerService from '../../services/BannerService.js';
+import OrderRepository from '../../repositories/OrderRepository.js';
 
 class AdminController {
     initRoutes(app) {
@@ -42,13 +43,23 @@ class AdminController {
         app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
         app.post('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
         app.post('/admin/get-orders-by-ctv/:ctvName/:take/:step', isAuth, this.findAllOrderByCTVName);
-        app.get('/admin/get-return-orders/:take/:step', isAuth, this.findAllOrderByStep);
+        app.post(
+            '/admin/search/return-order-by-phone-or-delivering-code',
+            isAuth,
+            this.findReturnOrderByPhoneOrDeliveringCode,
+        );
+
+        app.post('/admin/get-return-orders/:take/:step', isAuth, this.findAllReturnOrderByStep);
+        app.post('/admin/get-return-orders-by-ctv/:ctvName/:take/:step', isAuth, this.findAllReturnOrderByCTVName);
+        app.get('/admin/update-status-return-order/:orderId', isAuth, this.changeStatusReturnOrder);
+
         app.post(
             '/admin/get-orders-by-ctv-and-month/:ctvName/:month/:year/:take/:step',
             isAuth,
             this.findAllOrderByCTVNameInMonth,
         );
         app.post('/admin/get-orders-by-month/:month/:year/:take/:step', isAuth, this.findAllOrderByMonth);
+
         app.post('/admin/post/orderDetail-by-order', isAuth, this.findOrderDetailMany);
 
         app.post('/admin/update/order-confirmed/:orderId', isAuth, this.confirmedOrder);
@@ -497,8 +508,38 @@ class AdminController {
         try {
             const take = req.params.take;
             const step = req.params.step;
-            const orders = await OrderService.getAllReturnOrderByStep(take, step);
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const isReturn = req.body.isReturn;
+            const orders = await OrderService.getAllReturnOrderByStep(take, step, status, shipMethod, isReturn);
             if (orders != 'Fail') {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async findAllReturnOrderByCTVName(req, res) {
+        try {
+            const ctvName = req.params.ctvName;
+            const take = req.params.take;
+            const step = req.params.step;
+            const status = req.body.status;
+            const shipMethod = req.body.shipMethod;
+            const isReturn = req.body.isReturn;
+            const orders = await OrderService.getAllReturnOrderByCTVName(
+                ctvName,
+                take,
+                step,
+                status,
+                shipMethod,
+                isReturn,
+            );
+            if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
                 return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
@@ -707,6 +748,40 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
+    async findReturnOrderByPhoneOrDeliveringCode(req, res) {
+        try {
+            const searchTerm = req.body.searchTerm;
+            const order = await OrderService.getReturnOrderByPhoneOrDeliveringCode(searchTerm);
+            if (order) {
+                return res.status(httpStatus.OK).json({ message: 'Success', order });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
+    async changeStatusReturnOrder(req, res) {
+        try {
+            const orderId = req.params.orderId;
+            const order = await OrderRepository.find(orderId);
+            if (!order) {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+
+            const new_order = await OrderRepository.update(orderId, { isReturn: !order.isReturn });
+            if (!new_order) {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success' });
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
+
     async findNewOrderByPhone(req, res) {
         try {
             const searchTerm = req.body.searchTerm;

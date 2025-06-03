@@ -32,6 +32,7 @@ class OrderRepository extends BaseRepository {
             createDate: true,
             deliveryCode: true,
             adminNote: true,
+            isReturn: true,
         };
     }
 
@@ -96,12 +97,19 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
-    async findAllReturnOrderByStep(take, step) {
+    async findAllReturnOrderByStep(take, step, status, shipMethod, isReturn) {
         const orders = await this.db.findMany({
             where: {
                 status: {
-                    in: ['BOOM', 'CANCEL', 'GGDH'],
+                    in: ['BOOM', 'CANCEL'],
                 },
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                ...(isReturn && isReturn !== 'ALL'
+                    ? isReturn === 'true'
+                        ? { isReturn: true }
+                        : { isReturn: false }
+                    : {}),
             },
             take: parseInt(take),
             skip: (step - 1) * take,
@@ -113,6 +121,46 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
+    async findAllReturnOrderByCTVName(ctvName, take, step, status, shipMethod, isReturn) {
+        const orders = await this.db.findMany({
+            where: {
+                status: {
+                    in: ['BOOM', 'CANCEL'],
+                },
+                ctvName: ctvName,
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                ...(isReturn && isReturn !== 'ALL'
+                    ? isReturn === 'true'
+                        ? { isReturn: true }
+                        : { isReturn: false }
+                    : {}),
+            },
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+            take: parseInt(take),
+            skip: (step - 1) * take,
+        });
+
+        const count = await this.db.count({
+            where: {
+                status: {
+                    in: ['BOOM', 'CANCEL'],
+                },
+                ctvName: ctvName,
+                ...(status && status !== 'ALL' ? { status } : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                ...(isReturn && isReturn !== 'ALL'
+                    ? isReturn === 'true'
+                        ? { isReturn: true }
+                        : { isReturn: false }
+                    : {}),
+            },
+        });
+        return { orders, count };
+    }
     async getOrderCount() {
         const count = await this.db.count({
             where: {

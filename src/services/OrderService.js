@@ -67,10 +67,33 @@ class OrderService {
         }
     }
 
-    async getAllReturnOrderByStep(take, step) {
+    async getAllOrderByCTVName(ctvName, take, step, status, shipMethod) {
         try {
-            const orders = await OrderRepository.findAllReturnOrderByStep(take, step);
-            const count = await OrderRepository.getOrderCount();
+            const orders = await OrderRepository.findAllOrderByCTVName(ctvName, take, step, status, shipMethod);
+            return orders;
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getAllReturnOrderByStep(take, step, status, shipMethod, isReturn) {
+        try {
+            const orders = await OrderRepository.findAllReturnOrderByStep(take, step, status, shipMethod, isReturn);
+            const count = await OrderRepository.db.count({
+                where: {
+                    status: {
+                        in: ['BOOM', 'CANCEL', 'GGDH'],
+                    },
+                    ...(status && status !== 'ALL' ? { status } : {}),
+                    ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                    ...(isReturn && isReturn !== 'ALL'
+                        ? isReturn === 'true'
+                            ? { isReturn: true }
+                            : { isReturn: false }
+                        : {}),
+                },
+            });
             return {
                 orders: orders,
                 count: count,
@@ -80,10 +103,16 @@ class OrderService {
             return 'Fail';
         }
     }
-
-    async getAllOrderByCTVName(ctvName, take, step, status, shipMethod) {
+    async getAllReturnOrderByCTVName(ctvName, take, step, status, shipMethod, isReturn) {
         try {
-            const orders = await OrderRepository.findAllOrderByCTVName(ctvName, take, step, status, shipMethod);
+            const orders = await OrderRepository.findAllReturnOrderByCTVName(
+                ctvName,
+                take,
+                step,
+                status,
+                shipMethod,
+                isReturn,
+            );
             return orders;
         } catch (e) {
             console.log(e.message);
@@ -113,6 +142,28 @@ class OrderService {
         try {
             const order = await OrderRepository.db.findMany({
                 where: {
+                    OR: [
+                        { deliveryCode: { contains: searchTerm, mode: 'insensitive' } },
+                        { customerPhone: { contains: searchTerm, mode: 'insensitive' } },
+                    ],
+                },
+            });
+            if (order) {
+                return order;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
+
+    async getReturnOrderByPhoneOrDeliveringCode(searchTerm) {
+        try {
+            const order = await OrderRepository.db.findMany({
+                where: {
+                    status: {
+                        in: ['BOOM', 'CANCEL', 'GGDH'],
+                    },
                     OR: [
                         { deliveryCode: { contains: searchTerm, mode: 'insensitive' } },
                         { customerPhone: { contains: searchTerm, mode: 'insensitive' } },
