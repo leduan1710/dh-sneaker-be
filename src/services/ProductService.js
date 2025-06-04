@@ -174,5 +174,31 @@ class ProductService {
             };
         }
     }
+    async searchProductByName(searchTerm, categoryName) {
+        try {
+            const category = await CategoryRepository.db.findFirst({
+                where: {
+                    name: categoryName,
+                },
+                select: {
+                    id: true,
+                },
+            });
+            const product = await ProductRepository.db.findMany({
+                where: {
+                    name: { contains: searchTerm, mode: 'insensitive' },
+                    categoryId: category.id,
+                    active: true
+                    
+                },
+            });
+            if (product) {
+                return product;
+            }
+        } catch (e) {
+            console.error(e.message);
+            return 'Fail';
+        }
+    }
 }
 export default new ProductService();

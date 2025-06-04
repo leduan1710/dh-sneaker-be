@@ -81,9 +81,16 @@ class OrderService {
             const orders = await OrderRepository.findAllReturnOrderByStep(take, step, status, shipMethod, isReturn);
             const count = await OrderRepository.db.count({
                 where: {
-                    status: {
-                        in: ['BOOM', 'CANCEL', 'GGDH'],
-                    },
+                    OR: [
+                        {
+                            status: {
+                                in: ['BOOM', 'CANCEL'],
+                            },
+                        },
+                        {
+                            shipMethod: 'GGDH',
+                        },
+                    ],
                     ...(status && status !== 'ALL' ? { status } : {}),
                     ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
                     ...(isReturn && isReturn !== 'ALL'

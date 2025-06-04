@@ -100,16 +100,23 @@ class OrderRepository extends BaseRepository {
     async findAllReturnOrderByStep(take, step, status, shipMethod, isReturn) {
         const orders = await this.db.findMany({
             where: {
-                status: {
-                    in: ['BOOM', 'CANCEL'],
-                },
+                OR: [
+                    {
+                        status: {
+                            in: ['BOOM', 'CANCEL'],
+                        },
+                    },
+                    {
+                        shipMethod: 'GGDH',
+                    },
+                ],
                 ...(status && status !== 'ALL' ? { status } : {}),
-                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
                 ...(isReturn && isReturn !== 'ALL'
                     ? isReturn === 'true'
                         ? { isReturn: true }
                         : { isReturn: false }
                     : {}),
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
             },
             take: parseInt(take),
             skip: (step - 1) * take,
@@ -124,9 +131,16 @@ class OrderRepository extends BaseRepository {
     async findAllReturnOrderByCTVName(ctvName, take, step, status, shipMethod, isReturn) {
         const orders = await this.db.findMany({
             where: {
-                status: {
-                    in: ['BOOM', 'CANCEL'],
-                },
+                OR: [
+                    {
+                        status: {
+                            in: ['BOOM', 'CANCEL'],
+                        },
+                    },
+                    {
+                        shipMethod: 'GGDH',
+                    },
+                ],
                 ctvName: ctvName,
                 ...(status && status !== 'ALL' ? { status } : {}),
                 ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
@@ -146,9 +160,16 @@ class OrderRepository extends BaseRepository {
 
         const count = await this.db.count({
             where: {
-                status: {
-                    in: ['BOOM', 'CANCEL'],
-                },
+                OR: [
+                    {
+                        status: {
+                            in: ['BOOM', 'CANCEL'],
+                        },
+                    },
+                    {
+                        shipMethod: 'GGDH',
+                    },
+                ],
                 ctvName: ctvName,
                 ...(status && status !== 'ALL' ? { status } : {}),
                 ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
@@ -307,6 +328,7 @@ class OrderRepository extends BaseRepository {
         const successfulOrders = await this.db.findMany({
             where: {
                 status: 'SUCCESS',
+                shipMethod: { not: 'GGDH' },
                 createDate: {
                     gte: startOfMonth,
                     lte: endOfMonth,
@@ -363,6 +385,7 @@ class OrderRepository extends BaseRepository {
             where: {
                 ctvName: ctvName,
                 status: 'SUCCESS',
+                shipMethod: { not: 'GGDH' },
                 createDate: {
                     gte: startOfMonth,
                     lte: endOfMonth,
@@ -444,6 +467,7 @@ class OrderRepository extends BaseRepository {
         const successOrders = await this.db.findMany({
             where: {
                 status: 'SUCCESS',
+                shipMethod: { not: 'GGDH' },
                 createDate: {
                     gte: startOfYear,
                     lte: endOfYear,

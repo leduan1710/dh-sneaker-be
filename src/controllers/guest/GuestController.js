@@ -43,6 +43,7 @@ class GuestController {
         app.post('/api/get-new-product/:take/:step', this.findNewProducts);
 
         app.post('/api/search-product-by-name', this.findProductByName);
+        app.post('/api/search/product-by-name-and-category', this.searchProductByName);
     }
 
     async findProductByName(req, res) {
@@ -402,6 +403,21 @@ class GuestController {
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.BAD_GATEWAY).json({ message: 'Fail' });
+        }
+    }
+    async searchProductByName(req, res) {
+        try {
+            const searchTerm = req.body.searchTerm;
+            const categoryName = req.body.categoryName;
+            const products = await ProductService.searchProductByName(searchTerm,categoryName);
+            if (products) {
+                return res.status(httpStatus.OK).json({ message: 'Success', products });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
 }
