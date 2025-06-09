@@ -40,7 +40,9 @@ class AdminController {
         app.post('/admin/add/type', isAuth, this.addType);
         app.post('/admin/add/style', isAuth, this.addStyle);
 
-        app.get('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
+        app.post('/admin/get-new-orders/:take/:step', isAuth, this.findNewOrderByStep);
+        app.post('/admin/get-new-orders-by-ctv/:ctvName/:take/:step', isAuth, this.findAllNewOrderByCTV);
+
         app.post('/admin/get-orders/:take/:step', isAuth, this.findAllOrderByStep);
         app.post('/admin/get-orders-by-ctv/:ctvName/:take/:step', isAuth, this.findAllOrderByCTVName);
         app.post(
@@ -455,7 +457,9 @@ class AdminController {
         try {
             const take = req.params.take;
             const step = req.params.step;
-            const orders = await OrderService.getNewOrderByStep(take, step);
+            const shipMethod = req.body.shipMethod;
+
+            const orders = await OrderService.getNewOrderByStep(take, step,shipMethod);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -466,7 +470,23 @@ class AdminController {
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
         }
     }
-
+    async findAllNewOrderByCTV(req, res) {
+        try {
+            const ctvName = req.params.ctvName;
+            const take = req.params.take;
+            const step = req.params.step;
+            const shipMethod = req.body.shipMethod;
+            const orders = await OrderService.getAllNewOrderByCTVName(ctvName, take, step, shipMethod);
+            if (orders) {
+                return res.status(httpStatus.OK).json({ message: 'Success', orders });
+            } else {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+        } catch (e) {
+            console.log(e.message);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
+        }
+    }
     async findAllOrderByStep(req, res) {
         try {
             const take = req.params.take;

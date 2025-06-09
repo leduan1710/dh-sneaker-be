@@ -63,11 +63,13 @@ class OrderRepository extends BaseRepository {
         });
         return orders;
     }
-    async findNewOrderByShopByStep(take, step) {
+    async findNewOrderByStep(take, step, shipMethod) {
         const orders = await this.db.findMany({
             where: {
                 status: 'PROCESSING',
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
             },
+
             take: parseInt(take),
             skip: (step - 1) * take,
             orderBy: {
@@ -78,6 +80,31 @@ class OrderRepository extends BaseRepository {
         return orders;
     }
 
+    async findAllNewOrderByCTVName(ctvName, take, step, shipMethod) {
+        const orders = await this.db.findMany({
+            where: {
+                status: 'PROCESSING',
+                ctvName: ctvName,
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+            orderBy: {
+                createDate: 'desc',
+            },
+            select: this.defaultSelect,
+            take: parseInt(take),
+            skip: (step - 1) * take,
+        });
+
+        const count = await this.db.count({
+            where: {
+                status: 'PROCESSING',
+
+                ctvName: ctvName,
+                ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+            },
+        });
+        return { orders, count };
+    }
     async findAllOrderByStep(take, step, status, shipMethod) {
         const orders = await this.db.findMany({
             where: {

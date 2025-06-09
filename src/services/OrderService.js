@@ -35,9 +35,24 @@ class OrderService {
             return 'Fail';
         }
     }
-    async getNewOrderByStep(take, step) {
+    async getNewOrderByStep(take, step, shipMethod) {
         try {
-            const orders = await OrderRepository.findNewOrderByShopByStep(take, step);
+            const orders = await OrderRepository.findNewOrderByStep(take, step, shipMethod);
+            const count = await OrderRepository.db.count({
+                where: {
+                    status: 'PROCESSING',
+                    ...(shipMethod && shipMethod !== 'ALL' ? { shipMethod } : {}),
+                },
+            });
+            return { orders, count };
+        } catch (e) {
+            console.log(e.message);
+            return 'Fail';
+        }
+    }
+    async getAllNewOrderByCTVName(ctvName, take, step, shipMethod) {
+        try {
+            const orders = await OrderRepository.findAllNewOrderByCTVName(ctvName, take, step, shipMethod);
             return orders;
         } catch (e) {
             console.log(e.message);
