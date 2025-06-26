@@ -8,10 +8,10 @@ import UserRepository from '../repositories/UserRepository.js';
 
 class OrderService {
     async calculateBonus(totalQuantity) {
-        if (totalQuantity >= 300) return 700000;
-        if (totalQuantity >= 200) return 400000;
-        if (totalQuantity >= 150) return 250000;
-        if (totalQuantity >= 100) return 150000;
+        if (totalQuantity >= 300) return 7000000;
+        if (totalQuantity >= 200) return 4000000;
+        if (totalQuantity >= 150) return 2500000;
+        if (totalQuantity >= 100) return 1500000;
         if (totalQuantity >= 50) return 600000;
         if (totalQuantity >= 30) return 300000;
         return 0;
