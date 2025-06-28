@@ -337,7 +337,7 @@ class OrderService {
                             },
                             data: {
                                 commission: commissionRecord.commission + commission,
-                                total: commissionRecord.total + commission + bonusValue,
+                                total: commission + bonusValue,
                                 quantity: commissionRecord.quantity + totalQuantity,
                                 bonus: bonusValue,
                             },
@@ -426,7 +426,7 @@ class OrderService {
                             },
                             data: {
                                 commission: commissionRecord.commission + commissionBoom,
-                                total: commissionRecord.total + commissionBoom +bonusValue, 
+                                total: commissionBoom + bonusValue, 
                                 quantity: commissionRecord.quantity - totalQuantity,
                                 bonus: bonusValue,
                             },
@@ -516,8 +516,8 @@ class OrderService {
                                         : commissionRecord.commission + commission + commissionBoom,
                                 total:
                                     order.shipMethod === 'GGDH'
-                                        ? commissionRecord.total + order.CODPrice - order.shipFee + commissionBoom + bonusValue
-                                        : commissionRecord.total + commission + commissionBoom + bonusValue,
+                                        ? commissionRecord.commission + order.CODPrice - order.shipFee + commissionBoom + bonusValue
+                                        : commissionRecord.commission + commission + commissionBoom + bonusValue,
                                 quantity: commissionRecord.quantity + totalQuantity,
                                 bonus: bonusValue,
                             },
@@ -596,8 +596,8 @@ class OrderService {
                                             : commissionRecord.commission - commission,
                                     total:
                                         order.shipMethod === 'GGDH'
-                                            ? commissionRecord.total - (order.CODPrice - order.shipFee) + bonusValue
-                                            : commissionRecord.total - commission + bonusValue,
+                                            ? commissionRecord.commission - (order.CODPrice - order.shipFee) + bonusValue
+                                            : commissionRecord.commission - commission + bonusValue,
                                     quantity: commissionRecord.quantity - totalQuantity,
                                     bonus: bonusValue,
                                 },
@@ -736,8 +736,8 @@ class OrderService {
                                             : commissionRecord.commission + commission,
                                     total:
                                         order.shipMethod === 'GGDH'
-                                            ? commissionRecord.total + order.CODPrice - order.shipFee + bonusValue
-                                            : commissionRecord.total + commission + bonusValue,
+                                            ? commissionRecord.commission + order.CODPrice - order.shipFee + bonusValue
+                                            : commissionRecord.commission + commission + bonusValue,
                                     bonus: bonusValue,
                                     quantity: commissionRecord.quantity + totalQuantity,
                                 },
