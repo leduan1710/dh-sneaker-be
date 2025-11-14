@@ -10,6 +10,7 @@ import winston from 'winston';
 import cron from 'node-cron';
 import fs from 'fs';
 import { OnConnection } from './controllers/socket/OnSocket.js';
+import { apiLogger } from './middleware/logger.js';
 
 const app = express();
 const port = process.env.PORT || 3035;
@@ -22,6 +23,7 @@ app.use(
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH'],
     }),
 );
+app.use(apiLogger);
 // app.use((req, res, next) => {
 //     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 //     console.log(`Địa chỉ IP vừa truy cập: ${ip}`);

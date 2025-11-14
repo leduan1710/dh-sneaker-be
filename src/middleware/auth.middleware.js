@@ -52,6 +52,14 @@ export const isAuth = async (req, res, next) => {
         return res.status(httpStatus.UNAUTHORIZED).json({ message: 'Invalid token' });
     }
 };
+
+export const isAdmin = (req, res, next) => {
+    if(req.user && req.user.role === 'ADMIN') {
+        return next();
+    }
+    return res.status(403).json({ message: 'Forbidden: Admins only' });
+}
+
 export const generateRefreshToken = (user) => {
     try {
         return jsonwebtoken.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, {

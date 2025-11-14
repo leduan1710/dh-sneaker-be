@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import AuthService from '../../services/auth/AuthService.js';
 import ProductDetailService from '../../services/ProductDetailService.js';
 import ProductService from '../../services/ProductService.js';
@@ -13,7 +14,7 @@ import OrderService from '../../services/OrderService.js';
 import UserService from '../../services/ctv/UserService.js';
 import OrderDetailService from '../../services/OrderDetailService.js';
 import CommissionService from '../../services/CommissionService.js';
-import { isAuth } from '../../middleware/auth.middleware.js';
+import { isAdmin, isAuth } from '../../middleware/auth.middleware.js';
 import AdminService from '../../services/admin/AdminService.js';
 import UserRepository from '../../repositories/UserRepository.js';
 import ColorService from '../../services/ColorService.js';
@@ -76,9 +77,9 @@ class AdminController {
 
         app.get('/admin/get/users', isAuth, this.findAllUsers);
         app.post('/admin/get/user-by-email', isAuth, this.findUserByEmail);
-        app.get('/admin/ban-user/:userId', isAuth, this.banUser);
-        app.get('/admin/unban-user/:userId', isAuth, this.unBanUser);
-        app.get('/admin/confirm-user/:userId', isAuth, this.confirmCTV);
+        app.post('/admin/ban-user/:userId', isAuth, isAdmin, this.banUser);
+        app.post('/admin/unban-user/:userId', isAuth, isAdmin, this.unBanUser);
+        app.post('/admin/confirm-user/:userId', isAuth, isAdmin, this.confirmCTV);
 
         app.get('/admin/get/ctvNameList', isAuth, this.getCTVNameList);
 
@@ -459,7 +460,7 @@ class AdminController {
             const step = req.params.step;
             const shipMethod = req.body.shipMethod;
 
-            const orders = await OrderService.getNewOrderByStep(take, step,shipMethod);
+            const orders = await OrderService.getNewOrderByStep(take, step, shipMethod);
             if (orders) {
                 return res.status(httpStatus.OK).json({ message: 'Success', orders });
             } else {
@@ -929,20 +930,19 @@ class AdminController {
 
     async banUser(req, res) {
         try {
-            if (AuthService.isAdmin(req)) {
-                const userId = req.params.userId;
-                const user = await UserRepository.find(userId);
-                if (!user) {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
-                const new_user = await UserRepository.update(userId, { active: false });
-                if (!new_user) {
-                    return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
-                }
-                return res.status(httpStatus.OK).json({ message: 'Success' });
-            } else {
-                return res.status(httpStatus.FORBIDDEN).json({ message: 'Access denied' });
+            const userId = req.params.userId;
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return res.status(400).json({ message: 'Invalid userId' });
             }
+            const user = await UserRepository.find(userId);
+            if (!user) {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+            const new_user = await UserRepository.update(userId, { active: false });
+            if (!new_user) {
+                return res.status(httpStatus.NOT_FOUND).json({ message: 'Not Found' });
+            }
+            return res.status(httpStatus.OK).json({ message: 'Success' });
         } catch (e) {
             console.log(e.message);
             return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Fail' });
@@ -974,6 +974,11 @@ class AdminController {
     async confirmCTV(req, res) {
         try {
             const userId = req.params.userId;
+
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return res.status(400).json({ message: 'Invalid userId' });
+            }
+
             const registerRes = await AdminService.confirmCTV(userId);
             if (registerRes === 'Success') {
                 return res.status(httpStatus.OK).json({ message: 'Success' });
