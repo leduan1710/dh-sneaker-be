@@ -657,7 +657,7 @@ class OrderService {
                 const orderData = {
                     GROUPADDRESS_ID: 20236399,
                     SENDER_FULLNAME: 'Shop Giày / Crocs',
-                    SENDER_PHONE: '0773450028',
+                    SENDER_PHONE: '0768332739',
                     RECEIVER_FULLNAME: order.customerName,
                     RECEIVER_ADDRESS:
                         order.addressDetail +
