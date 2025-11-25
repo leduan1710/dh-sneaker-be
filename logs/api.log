@@ -95,5 +95,3 @@
 {"time":"2025-11-14T04:03:43.376Z","method":"GET","endpoint":"/uploads/2025/6/1-15-42-58-image_1748792578537_elkxg8ut2.jpg","user":"Guest","ip":"::1","status":200,"duration":"4ms"}
 {"time":"2025-11-14T04:03:45.469Z","method":"GET","endpoint":"/admin/get/users","user":"67bd483ebae8ef9271221c18","ip":"::1","status":304,"duration":"441ms"}
 {"time":"2025-11-14T04:03:46.425Z","method":"GET","endpoint":"/admin/get/categories","user":"67bd483ebae8ef9271221c18","ip":"::1","status":304,"duration":"237ms"}
-{"time":"2025-11-14T05:11:35.559Z","method":"GET","endpoint":"/api/categories","user":"Guest","ip":"::1","status":304,"duration":"721ms"}
-{"time":"2025-11-14T05:11:35.949Z","method":"GET","endpoint":"/favicon.ico","user":"Guest","ip":"::1","status":404,"duration":"5ms"}
